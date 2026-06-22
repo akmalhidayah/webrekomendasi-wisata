@@ -1,0 +1,6 @@
+@extends('layouts.admin')
+@section('title', 'Fasilitas Wisata')
+@section('content')
+<div class="d-flex justify-content-between align-items-center mb-3"><div><h1 class="h3 mb-0">Fasilitas</h1><span class="text-muted">{{ $wisata->nama_wisata }}</span></div><div><a class="btn btn-light" href="{{ route('admin.wisata.show', $wisata) }}">Kembali</a> <a class="btn btn-primary" href="{{ route('admin.wisata.fasilitas.create', $wisata) }}">Tambah Fasilitas</a></div></div>
+<div class="card shadow-sm"><div class="table-responsive"><table class="table table-hover mb-0"><thead><tr><th>Nama Fasilitas</th><th>Keterangan</th><th class="text-end">Aksi</th></tr></thead><tbody>@forelse ($fasilitas as $item)<tr><td>{{ $item->nama_fasilitas }}</td><td>{{ $item->keterangan ?: '-' }}</td><td class="text-end"><a class="btn btn-sm btn-outline-primary" href="{{ route('admin.wisata.fasilitas.edit', [$wisata, $item]) }}">Edit</a> <form class="d-inline" method="POST" action="{{ route('admin.wisata.fasilitas.destroy', [$wisata, $item]) }}" onsubmit="return confirm('Hapus fasilitas?')">@csrf @method('DELETE')<button class="btn btn-sm btn-outline-danger">Hapus</button></form></td></tr>@empty<tr><td colspan="3" class="text-center text-muted py-4">Belum ada fasilitas.</td></tr>@endforelse</tbody></table></div></div><div class="mt-3">{{ $fasilitas->links() }}</div>
+@endsection

@@ -1,0 +1,95 @@
+@import 'tailwindcss';
+
+@source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
+@source '../../storage/framework/views/*.php';
+@source '../**/*.blade.php';
+@source '../**/*.js';
+
+@theme {
+    --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
+        'Segoe UI Symbol', 'Noto Color Emoji';
+}
+@layer components {
+    .destination-media,
+    .wisata-image-wrap,
+    .card-image,
+    .card-img-area,
+    .wisata-card-image {
+        position: relative;
+    }
+
+    .rating-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        width: fit-content;
+        max-width: max-content;
+        padding: 6px 10px 6px 7px;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.94);
+        color: #0f172a;
+        border: 1px solid rgba(226, 232, 240, 0.95);
+        box-shadow: 0 10px 24px rgba(15, 23, 42, 0.14);
+        font-size: 13px;
+        font-weight: 800;
+        line-height: 1;
+        z-index: 20;
+        backdrop-filter: blur(8px);
+    }
+
+    .rating-badge-image {
+        position: absolute;
+        top: 14px;
+        right: 14px;
+    }
+
+    .rating-badge-detail {
+        position: static;
+        padding: 8px 12px 8px 8px;
+        font-size: 14px;
+    }
+
+    .rating-badge-icon {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 24px;
+        height: 24px;
+        border-radius: 999px;
+        background: #f59e0b;
+        color: #ffffff;
+        flex: 0 0 auto;
+    }
+
+    .rating-badge-value {
+        letter-spacing: -0.02em;
+        color: #0f172a;
+    }
+
+    .rating-badge-source {
+        color: #64748b;
+        font-size: 11px;
+        font-weight: 700;
+    }
+
+    @media (max-width: 575.98px) {
+        .rating-badge-image {
+            top: 10px;
+            right: 10px;
+        }
+
+        .rating-badge {
+            padding: 5px 9px 5px 6px;
+            font-size: 12px;
+        }
+
+        .rating-badge-icon {
+            width: 22px;
+            height: 22px;
+        }
+
+        .rating-badge-source {
+            font-size: 10px;
+        }
+    }
+}
