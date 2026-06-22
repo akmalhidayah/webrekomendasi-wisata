@@ -24,11 +24,11 @@
         box-shadow: 0 28px 70px rgba(8, 47, 73, .2);
     }
 
-    .hero-content {
-        position: relative;
-        z-index: 2;
-        padding: 95px 0 130px;
-    }
+.hero-content {
+    position: relative;
+    z-index: 2;
+    padding: 95px 36px 130px;
+}
 
     .hero-kicker {
         display: inline-flex;
@@ -141,22 +141,82 @@
         box-shadow: 0 24px 60px rgba(3, 105, 161, .2);
     }
 
-    @media (max-width: 991.98px) {
-        .hero-modern {
-            min-height: auto;
-        }
+  @media (max-width: 991.98px) {
+    .hero-modern {
+        min-height: auto;
+        border-radius: 28px;
+    }
 
-        .hero-content {
-            padding: 70px 0 115px;
-        }
+    .hero-content {
+        padding: 70px 28px 115px;
+    }
 
-        .hero-orbit {
-            display: none;
-        }
+    .hero-orbit {
+        display: none;
+    }
 
-        .home-shell {
-            padding: 10px 8px 0;
-        }
+    .home-shell {
+        padding: 10px 8px 0;
+    }
+}
+
+@media (max-width: 575.98px) {
+    .home-shell {
+        padding: 8px 8px 0;
+    }
+
+    .hero-modern {
+        border-radius: 24px;
+        min-height: 465px;
+        background-position: center;
+    }
+
+    .hero-content {
+        padding: 58px 22px 88px;
+    }
+
+    .hero-kicker {
+        font-size: .72rem;
+        padding: .48rem .72rem;
+        margin-bottom: 1rem !important;
+    }
+
+    .hero-title {
+        font-size: clamp(2.05rem, 10vw, 2.7rem);
+        line-height: 1.03;
+        letter-spacing: -.045em;
+        margin-bottom: 1.1rem !important;
+        max-width: 310px;
+    }
+
+    .hero-content .d-flex.flex-wrap.gap-3 {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: .75rem !important;
+    }
+
+    .hero-content .btn {
+        width: fit-content;
+        max-width: 100%;
+        padding: .8rem 1.05rem;
+        font-size: .95rem;
+        border-radius: 14px;
+    }
+
+    .stat-wrap {
+        margin-top: -46px;
+        padding-left: 14px;
+        padding-right: 14px;
+    }
+
+    .stat-panel {
+        border-radius: 22px;
+    }
+
+    .stat-item {
+        padding: 1rem 1.1rem;
+    }
+
     }
 </style>
 @endpush
