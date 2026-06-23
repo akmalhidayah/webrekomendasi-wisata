@@ -21,7 +21,19 @@ class HomeController extends Controller
             ->get();
         $totalWisata = Wisata::where('status', 'aktif')->count();
         $totalKategori = KategoriWisata::count();
+        $heroImages = Wisata::with('fotoWisata')
+            ->where('status', 'aktif')
+            ->orderBy('nama_wisata')
+            ->get()
+            ->flatMap(function (Wisata $item) {
+                return collect([$item->foto_url])
+                    ->merge($item->fotoWisata->map->foto_url);
+            })
+            ->filter()
+            ->unique()
+            ->take(8)
+            ->values();
 
-        return view('wisatawan.home', compact('wisata', 'totalWisata', 'totalKategori'));
+        return view('wisatawan.home', compact('wisata', 'totalWisata', 'totalKategori', 'heroImages'));
     }
 }

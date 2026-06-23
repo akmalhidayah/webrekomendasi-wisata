@@ -13,22 +13,63 @@
         min-height: 620px;
         border-radius: 34px;
         overflow: hidden;
-        background:
-            linear-gradient(
-                90deg,
-                rgba(4, 27, 46, .94) 0%,
-                rgba(4, 52, 72, .75) 54%,
-                rgba(4, 52, 72, .18) 100%
-            ),
-            url('https://images.unsplash.com/photo-1518509562904-e7ef99cdcc86?auto=format&fit=crop&w=2000&q=88') center/cover;
+        isolation: isolate;
+        background: linear-gradient(135deg, #082f49 0%, #0f766e 100%);
         box-shadow: 0 28px 70px rgba(8, 47, 73, .2);
     }
 
-.hero-content {
-    position: relative;
-    z-index: 2;
-    padding: 95px 36px 130px;
-}
+    .hero-modern::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        z-index: 1;
+        pointer-events: none;
+        background:
+            linear-gradient(
+                90deg,
+                rgba(4, 27, 46, .96) 0%,
+                rgba(4, 52, 72, .83) 45%,
+                rgba(4, 52, 72, .45) 100%
+            ),
+            radial-gradient(circle at 78% 18%, rgba(255, 255, 255, .23), transparent 31%),
+            radial-gradient(circle at 88% 88%, rgba(245, 158, 11, .22), transparent 28%);
+    }
+
+    .hero-bg-stack,
+    .hero-bg-item {
+        position: absolute;
+        inset: 0;
+    }
+
+    .hero-bg-stack {
+        z-index: 0;
+        background: linear-gradient(135deg, #082f49 0%, #0f766e 100%);
+    }
+
+    .hero-bg-item {
+        background-size: cover;
+        background-position: center;
+        opacity: 0;
+        transform: scale(1.08);
+        filter: saturate(1.08) contrast(1.04);
+        animation: heroImageFade var(--hero-duration, 30s) ease-in-out infinite;
+        animation-delay: var(--hero-delay, 0s);
+    }
+
+    .hero-bg-item:first-child {
+        opacity: .42;
+    }
+
+    .hero-bg-item.is-single {
+        opacity: .42;
+        animation: none;
+    }
+
+    .hero-content {
+        position: relative;
+        z-index: 2;
+        padding: 95px 36px 130px;
+    }
 
     .hero-kicker {
         display: inline-flex;
@@ -195,6 +236,25 @@
         border: 0;
     }
 
+    @keyframes heroImageFade {
+        0%,
+        11% {
+            opacity: .42;
+            transform: scale(1.02);
+        }
+
+        20%,
+        100% {
+            opacity: 0;
+            transform: scale(1.08);
+        }
+
+        7%,
+        14% {
+            opacity: .42;
+        }
+    }
+
   @media (max-width: 991.98px) {
     .hero-modern {
         min-height: auto;
@@ -277,7 +337,18 @@
 
 @section('content')
 <div class="home-shell">
-    <section class="hero-modern">
+    <section class="hero-modern" style="--hero-duration: {{ max(20, $heroImages->count() * 5) }}s">
+        @if ($heroImages->isNotEmpty())
+            <div class="hero-bg-stack" aria-hidden="true">
+                @foreach ($heroImages as $index => $image)
+                    <span
+                        class="hero-bg-item {{ $heroImages->count() === 1 ? 'is-single' : '' }}"
+                        style="background-image: url('{{ $image }}'); --hero-delay: {{ $index * 5 }}s;"
+                    ></span>
+                @endforeach
+            </div>
+        @endif
+
         <div class="container hero-content">
             <div class="hero-kicker mb-4">
                 <i class="bi bi-geo-alt-fill"></i>
@@ -427,28 +498,41 @@
 <section class="container pb-5 reveal">
     <div class="south-profile">
         <div class="row g-0 align-items-stretch">
-            <div class="col-lg-5">
+            <div class="col-lg-6">
                 <div class="south-profile-copy h-100">
-                    <div class="section-eyebrow mb-2">Profil Sulawesi Selatan</div>
+                    <div class="section-eyebrow mb-2">City of Makassar</div>
 
                     <h2 class="south-profile-title mb-3">
-                        Gerbang Indonesia Timur dengan budaya, laut, dan kuliner kuat.
+                        Sejarah singkat Kota Makassar.
                     </h2>
 
-                    <p class="text-secondary mb-0">
-                        Sulawesi Selatan dikenal sebagai wilayah pesisir yang kaya sejarah, tradisi, dan destinasi wisata.
-                        Makassar menjadi pintu masuk utama untuk menjelajahi pantai, pulau, kuliner, serta budaya Bugis-Makassar.
+                    <p class="text-secondary">
+                        Makassar adalah ibu kota Provinsi Sulawesi Selatan. Sebelum tahun 1999, kota ini lebih dikenal
+                        dengan nama Ujung Pandang. Nama Makassar telah disebut dalam Kitab Negarakertagama karya
+                        Mpu Prapanca pada abad ke-14 sebagai salah satu daerah taklukan Kerajaan Majapahit.
                     </p>
 
-                    <div class="south-profile-list">
-                        <span><i class="bi bi-compass-fill"></i> Pusat perjalanan menuju destinasi bahari dan budaya.</span>
-                        <span><i class="bi bi-cup-hot-fill"></i> Kuat dengan ikon kuliner seperti coto, konro, dan pisang epe.</span>
-                        <span><i class="bi bi-water"></i> Memiliki karakter wisata pantai, pulau, sejarah, dan edukasi.</span>
-                    </div>
+                    <p class="text-secondary mb-0">
+                        Awal kota dan bandar Makassar berkembang di muara Sungai Tallo pada penghujung abad XV.
+                        Pada pertengahan abad XVI, Kerajaan Tallo bersatu dengan Gowa dan mulai menjadi kekuatan
+                        penting di kawasan pesisir. Perkembangan perdagangan kemudian mendorong perpindahan pusat
+                        bandar ke muara Sungai Jeneberang, disertai pembangunan kawasan istana dan pertahanan
+                        Benteng Somba Opu. Pada masa Raja Gowa XVI, Benteng Rotterdam berdiri dan aktivitas
+                        perdagangan lokal, regional, hingga internasional semakin meningkat.
+                    </p>
+
+                    <a
+                        class="btn btn-outline-primary btn-modern mt-4"
+                        href="https://makassarkota.go.id/sejarah-kota-makassar/"
+                        target="_blank"
+                        rel="noopener"
+                    >
+                        Baca sejarah lengkap <i class="bi bi-arrow-up-right ms-1"></i>
+                    </a>
                 </div>
             </div>
 
-            <div class="col-lg-7">
+            <div class="col-lg-6">
                 <div class="video-frame h-100">
                     <iframe
                         src="https://www.youtube.com/embed/IWaUQiI1Q00?autoplay=1&mute=1&loop=1&playlist=IWaUQiI1Q00&controls=1&rel=0&modestbranding=1"

@@ -5,6 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="theme-color" content="#082f49">
     <title>@yield('title', 'Wisata Makassar')</title>
+    <link rel="icon" type="image/png" href="{{ asset('images/logos/logo-dinas-pariwisata.png') }}">
+    <link rel="shortcut icon" type="image/png" href="{{ asset('images/logos/logo-dinas-pariwisata.png') }}">
+    <link rel="apple-touch-icon" href="{{ asset('images/logos/logo-dinas-pariwisata.png') }}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -18,6 +21,7 @@
         .site-nav { border:1px solid rgba(255,255,255,.12); border-radius:22px; background:rgba(7,31,50,.92)!important; box-shadow:0 18px 45px rgba(8,47,73,.18); backdrop-filter:blur(18px); -webkit-backdrop-filter:blur(18px); }
         .navbar-brand-mark { width:39px; height:39px; display:grid; place-items:center; border-radius:13px; color:#fff; background:linear-gradient(135deg,#06b6d4,#0f766e); box-shadow:0 8px 18px rgba(6,182,212,.24); }
         .public-logos { display:flex; align-items:center; gap:8px; }.public-logos img { width:auto; height:44px; padding:0; object-fit:contain; border:0; border-radius:0; background:transparent; }
+        .site-nav .public-logos img { filter:drop-shadow(0 0 1px #fff) drop-shadow(0 0 1px rgba(255,255,255,.85)); }
         .site-nav .nav-link { color:rgba(255,255,255,.72); font-weight:600; border-radius:12px; padding:.65rem .85rem!important; transition:.2s ease; }
         .site-nav .nav-link:hover,.site-nav .nav-link.active { color:#fff; background:rgba(255,255,255,.1); transform:translateY(-1px); }
         .nav-recommendation { background:linear-gradient(135deg,#fbbf24,#f59e0b)!important; color:#3f2a00!important; }
@@ -46,7 +50,7 @@
 <header class="site-header">
     <nav class="navbar navbar-expand-lg navbar-dark site-nav">
         <div class="container px-lg-4">
-            <a class="navbar-brand d-flex align-items-center gap-2 fw-bold" href="{{ route('wisatawan.home') }}"><span class="public-logos"><img src="{{ asset('images/logos/logo-sulsel.png') }}" alt="Logo Sulawesi Selatan"><img src="{{ asset('images/logos/logo-dinas-pariwisata.png') }}" alt="Logo Dinas Pariwisata"></span><span>Jelajah Makassar</span></a>
+            <a class="navbar-brand d-flex align-items-center gap-2 fw-bold" href="{{ route('wisatawan.home') }}" aria-label="Beranda"><span class="public-logos"><img src="{{ asset('images/logos/logo-sulsel.png') }}" alt="Logo Sulawesi Selatan"><img src="{{ asset('images/logos/logo-dinas-pariwisata.png') }}" alt="Logo Dinas Pariwisata"></span></a>
             <button class="navbar-toggler border-0 shadow-none" type="button" data-bs-toggle="collapse" data-bs-target="#mainNav"><span class="navbar-toggler-icon"></span></button>
             <div class="collapse navbar-collapse" id="mainNav"><div class="navbar-nav ms-auto align-items-lg-center gap-lg-1">
                 <a class="nav-link {{ request()->routeIs('wisatawan.home') ? 'active' : '' }}" href="{{ route('wisatawan.home') }}"><i class="bi bi-house-door me-1"></i> Beranda</a>
