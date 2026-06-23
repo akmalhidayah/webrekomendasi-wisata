@@ -326,8 +326,8 @@
                 </h1>
 
                 <p class="result-subtitle mb-3">
-                    Rekomendasi ini dihitung dari gabungan pola pilihan pengunjung lain, jenis wisata yang Anda sukai,
-                    dan rating destinasi.
+                    Rekomendasi ini dihitung dari skor utama yang menggabungkan pola pilihan pengunjung lain
+                    dan rating destinasi, lalu disesuaikan dengan jenis wisata yang Anda sukai.
                 </p>
 
                 <div class="guest-code">
@@ -365,8 +365,10 @@
             <div>
                 <strong>Informasi Perhitungan</strong>
                 <div class="small">
-                    Sistem mencari pengunjung dengan pola pilihan yang mirip, lalu memberi nilai tambahan pada
-                    destinasi yang kategori/jenisnya sesuai minat Anda dan memiliki rating destinasi yang baik.
+                    Sistem mencari pengunjung dengan pola pilihan yang mirip, menggabungkannya dengan rating
+                    destinasi, lalu menyesuaikan hasilnya berdasarkan kategori dan jenis wisata yang paling cocok
+                    dengan minat Anda. Jika skor cocok antar destinasi berdekatan, destinasi dengan rating lebih
+                    tinggi ditampilkan lebih dulu.
                 </div>
             </div>
         </div>
@@ -380,7 +382,7 @@
                 <div>
                     <strong>Rekomendasi Awal</strong>
                     <div class="small">
-                        Rekomendasi awal ditampilkan dari gabungan minat kategori, rating destinasi, dan data populer
+                        Rekomendasi awal ditampilkan dari gabungan rating destinasi, minat kategori, dan data populer
                         karena pola pengunjung lain masih terbatas.
                     </div>
                 </div>

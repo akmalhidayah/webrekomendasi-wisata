@@ -12,9 +12,8 @@ class CollaborativeFilteringService
 {
     /**
      * Menghasilkan rekomendasi hybrid:
-     * - pola guest lain melalui User-Based Collaborative Filtering,
+     * - skor utama dari User-Based Collaborative Filtering dan rating destinasi,
      * - kecocokan kategori/jenis wisata dari survei target,
-     * - kualitas destinasi dari rating Maps/aplikasi.
      */
     public function generateRecommendations(GuestVisitor $guestVisitor, int $limit = 5): array
     {
@@ -66,15 +65,17 @@ class CollaborativeFilteringService
         }
 
         usort($predictions, fn (array $first, array $second) => [
+            round($second['nilai_prediksi'], 1),
+            $second['skor_rating_destinasi'],
             $second['nilai_prediksi'],
             $second['nilai_similarity'],
             $second['prediksi_cf'],
-            $second['skor_rating_destinasi'],
         ] <=> [
+            round($first['nilai_prediksi'], 1),
+            $first['skor_rating_destinasi'],
             $first['nilai_prediksi'],
             $first['nilai_similarity'],
             $first['prediksi_cf'],
-            $first['skor_rating_destinasi'],
         ]);
         $recommendations = array_slice($predictions, 0, max(1, $limit));
 
@@ -268,13 +269,11 @@ class CollaborativeFilteringService
         float $qualityScore,
         bool $hasCollaborativeSignal = true,
     ): float {
-        $collaborativeWeight = $hasCollaborativeSignal ? 0.60 : 0.35;
+        $mainScore = (($collaborativeScore / 5) * 0.8) + ($qualityScore * 0.2);
+        $mainWeight = $hasCollaborativeSignal ? 0.75 : 0.55;
         $preferenceWeight = $hasCollaborativeSignal ? 0.25 : 0.45;
-        $qualityWeight = $hasCollaborativeSignal ? 0.15 : 0.20;
 
-        $score = (($collaborativeScore / 5) * $collaborativeWeight)
-            + ($preferenceScore * $preferenceWeight)
-            + ($qualityScore * $qualityWeight);
+        $score = ($mainScore * $mainWeight) + ($preferenceScore * $preferenceWeight);
 
         return round(max(0, min(1, $score)) * 5, 4);
     }
@@ -340,12 +339,14 @@ class CollaborativeFilteringService
             ];
         })
             ->sort(fn (array $first, array $second) => [
-                $second['nilai_prediksi'],
+                round($second['nilai_prediksi'], 1),
                 $second['skor_rating_destinasi'],
+                $second['nilai_prediksi'],
                 $second['prediksi_cf'],
             ] <=> [
-                $first['nilai_prediksi'],
+                round($first['nilai_prediksi'], 1),
                 $first['skor_rating_destinasi'],
+                $first['nilai_prediksi'],
                 $first['prediksi_cf'],
             ])
             ->take(max(1, $limit))
