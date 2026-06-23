@@ -35,8 +35,8 @@ class Wisata extends Model
         'status',
         'foto_utama',
         'rating_maps',
-'jumlah_rating_maps',
-'rating_maps_updated_at',
+        'jumlah_rating_maps',
+        'rating_maps_updated_at',
     ];
 
     protected function casts(): array
@@ -97,63 +97,64 @@ class Wisata extends Model
     {
         return $this->hasMany(HasilRekomendasi::class);
     }
+
     public function getRatingAplikasiRataRataAttribute(): ?float
-{
-    $avg = $this->ratingKunjungan()
-        ->where('status', 'disetujui')
-        ->avg('rating');
+    {
+        $avg = $this->ratingKunjungan()
+            ->where('status', 'disetujui')
+            ->avg('rating');
 
-    return $avg !== null ? round((float) $avg, 1) : null;
-}
-
-public function getJumlahRatingAplikasiAttribute(): int
-{
-    return (int) $this->ratingKunjungan()
-        ->where('status', 'disetujui')
-        ->count();
-}
-
-public function getRatingTampilAttribute(): ?float
-{
-    $ratingMaps = $this->rating_maps !== null ? (float) $this->rating_maps : null;
-    $ratingAplikasi = $this->rating_aplikasi_rata_rata;
-    $jumlahRatingAplikasi = $this->jumlah_rating_aplikasi;
-
-    // Jika ada rating Maps dan rating aplikasi, gabungkan.
-    // Rating Maps dianggap sebagai nilai awal/baseline.
-    if ($ratingMaps !== null && $ratingAplikasi !== null && $jumlahRatingAplikasi > 0) {
-        $nilaiGabungan = ($ratingMaps + ($ratingAplikasi * $jumlahRatingAplikasi)) / ($jumlahRatingAplikasi + 1);
-
-        return round($nilaiGabungan, 1);
+        return $avg !== null ? round((float) $avg, 1) : null;
     }
 
-    // Jika belum ada rating aplikasi, tampilkan rating Maps.
-    if ($ratingMaps !== null) {
-        return round($ratingMaps, 1);
+    public function getJumlahRatingAplikasiAttribute(): int
+    {
+        return (int) $this->ratingKunjungan()
+            ->where('status', 'disetujui')
+            ->count();
     }
 
-    // Jika tidak ada rating Maps, tampilkan rating aplikasi.
-    if ($ratingAplikasi !== null) {
-        return round($ratingAplikasi, 1);
+    public function getRatingTampilAttribute(): ?float
+    {
+        $ratingMaps = $this->rating_maps !== null ? (float) $this->rating_maps : null;
+        $ratingAplikasi = $this->rating_aplikasi_rata_rata;
+        $jumlahRatingAplikasi = $this->jumlah_rating_aplikasi;
+
+        // Jika ada rating Maps dan rating aplikasi, gabungkan.
+        // Rating Maps dianggap sebagai nilai awal/baseline.
+        if ($ratingMaps !== null && $ratingAplikasi !== null && $jumlahRatingAplikasi > 0) {
+            $nilaiGabungan = ($ratingMaps + ($ratingAplikasi * $jumlahRatingAplikasi)) / ($jumlahRatingAplikasi + 1);
+
+            return round($nilaiGabungan, 1);
+        }
+
+        // Jika belum ada rating aplikasi, tampilkan rating Maps.
+        if ($ratingMaps !== null) {
+            return round($ratingMaps, 1);
+        }
+
+        // Jika tidak ada rating Maps, tampilkan rating aplikasi.
+        if ($ratingAplikasi !== null) {
+            return round($ratingAplikasi, 1);
+        }
+
+        return null;
     }
 
-    return null;
-}
+    public function getLabelRatingTampilAttribute(): string
+    {
+        if ($this->rating_maps !== null && $this->jumlah_rating_aplikasi > 0) {
+            return 'Rating Maps + Aplikasi';
+        }
 
-public function getLabelRatingTampilAttribute(): string
-{
-    if ($this->rating_maps !== null && $this->jumlah_rating_aplikasi > 0) {
-        return 'Rating Maps + Aplikasi';
+        if ($this->rating_maps !== null) {
+            return 'Rating Maps';
+        }
+
+        if ($this->jumlah_rating_aplikasi > 0) {
+            return 'Rating Aplikasi';
+        }
+
+        return 'Belum ada rating';
     }
-
-    if ($this->rating_maps !== null) {
-        return 'Rating Maps';
-    }
-
-    if ($this->jumlah_rating_aplikasi > 0) {
-        return 'Rating Aplikasi';
-    }
-
-    return 'Belum ada rating';
-}
 }

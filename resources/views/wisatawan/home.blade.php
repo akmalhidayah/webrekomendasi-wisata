@@ -141,6 +141,60 @@
         box-shadow: 0 24px 60px rgba(3, 105, 161, .2);
     }
 
+    .south-profile {
+        border: 1px solid #dfe7ef;
+        border-radius: 30px;
+        overflow: hidden;
+        background: #ffffff;
+    }
+
+    .south-profile-copy {
+        padding: clamp(1.5rem, 4vw, 2.7rem);
+    }
+
+    .south-profile-title {
+        font-size: clamp(1.7rem, 3.2vw, 3rem);
+        line-height: 1.08;
+        letter-spacing: -.045em;
+        font-weight: 800;
+        color: #0f172a;
+    }
+
+    .south-profile-list {
+        display: grid;
+        gap: .75rem;
+        margin-top: 1.25rem;
+    }
+
+    .south-profile-list span {
+        display: flex;
+        align-items: flex-start;
+        gap: .65rem;
+        color: #475569;
+        line-height: 1.65;
+    }
+
+    .south-profile-list i {
+        margin-top: .22rem;
+        color: #0284c7;
+    }
+
+    .video-frame {
+        position: relative;
+        width: 100%;
+        min-height: 100%;
+        aspect-ratio: 16 / 9;
+        background: #082f49;
+    }
+
+    .video-frame iframe {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        border: 0;
+    }
+
   @media (max-width: 991.98px) {
     .hero-modern {
         min-height: auto;
@@ -238,7 +292,7 @@
 
 
             <div class="d-flex flex-wrap gap-3 mb-4">
-                <a class="btn btn-warning btn-modern btn-lg" href="{{ route('wisatawan.survey.index') }}">
+                <a class="btn btn-warning btn-modern btn-lg" href="{{ route('wisatawan.rekomendasi.index') }}">
                     <i class="bi bi-stars me-2"></i>Cari Rekomendasiku
                 </a>
 
@@ -371,6 +425,44 @@
 </section>
 
 <section class="container pb-5 reveal">
+    <div class="south-profile">
+        <div class="row g-0 align-items-stretch">
+            <div class="col-lg-5">
+                <div class="south-profile-copy h-100">
+                    <div class="section-eyebrow mb-2">Profil Sulawesi Selatan</div>
+
+                    <h2 class="south-profile-title mb-3">
+                        Gerbang Indonesia Timur dengan budaya, laut, dan kuliner kuat.
+                    </h2>
+
+                    <p class="text-secondary mb-0">
+                        Sulawesi Selatan dikenal sebagai wilayah pesisir yang kaya sejarah, tradisi, dan destinasi wisata.
+                        Makassar menjadi pintu masuk utama untuk menjelajahi pantai, pulau, kuliner, serta budaya Bugis-Makassar.
+                    </p>
+
+                    <div class="south-profile-list">
+                        <span><i class="bi bi-compass-fill"></i> Pusat perjalanan menuju destinasi bahari dan budaya.</span>
+                        <span><i class="bi bi-cup-hot-fill"></i> Kuat dengan ikon kuliner seperti coto, konro, dan pisang epe.</span>
+                        <span><i class="bi bi-water"></i> Memiliki karakter wisata pantai, pulau, sejarah, dan edukasi.</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-7">
+                <div class="video-frame h-100">
+                    <iframe
+                        src="https://www.youtube.com/embed/IWaUQiI1Q00?autoplay=1&mute=1&loop=1&playlist=IWaUQiI1Q00&controls=1&rel=0&modestbranding=1"
+                        title="Video Pariwisata Makassar"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                        allowfullscreen
+                    ></iframe>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="container pb-5 reveal">
     <div class="recommend-banner p-4 p-lg-5">
         <div class="row align-items-center g-4">
             <div class="col-lg-8">
@@ -458,7 +550,7 @@
                             </div>
                         </div>
 
-                        <a class="btn btn-warning btn-modern w-100" href="{{ route('wisatawan.survey.index') }}">
+                        <a class="btn btn-warning btn-modern w-100" href="{{ route('wisatawan.rekomendasi.index') }}">
                             Temukan Wisataku <i class="bi bi-arrow-right ms-1"></i>
                         </a>
 

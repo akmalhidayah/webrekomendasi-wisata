@@ -12,7 +12,7 @@ class RatingKunjunganTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_guest_can_submit_valid_visit_rating_as_pending(): void
+    public function test_guest_can_submit_valid_visit_rating_as_approved(): void
     {
         $this->seed();
         $wisata = Wisata::firstOrFail();
@@ -28,7 +28,7 @@ class RatingKunjunganTest extends TestCase
         $this->assertDatabaseHas('rating_kunjungan', [
             'wisata_id' => $wisata->id,
             'rating' => 5,
-            'status' => 'pending',
+            'status' => 'disetujui',
         ]);
         $this->assertDatabaseCount('guest_visitors', 1);
     }
@@ -46,7 +46,7 @@ class RatingKunjunganTest extends TestCase
         $this->get(route('admin.rating-kunjungan.show', $rating))->assertOk();
         $this->get(route('wisatawan.wisata.show', $rating->wisata->slug))
             ->assertOk()
-            ->assertSee('1 rating disetujui');
+            ->assertSee('1 ulasan');
     }
 
     public function test_admin_can_reject_a_rating(): void

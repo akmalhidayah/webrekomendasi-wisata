@@ -34,6 +34,13 @@
         .sidebar-toggle { width:42px; height:42px; display:grid; place-items:center; border:1px solid #e2e8f0; border-radius:13px; color:#334155; background:#fff; transition:.2s; }.sidebar-toggle:hover { color:#0369a1; border-color:#bae6fd; background:#f0f9ff; }
         .topbar-title { margin:0; font-size:1rem; font-weight:800; }.topbar-subtitle { color:#94a3b8; font-size:.72rem; }
         .topbar-action { width:40px; height:40px; display:grid; place-items:center; border:1px solid #e2e8f0; border-radius:13px; color:#475569; text-decoration:none; background:#fff; }
+        .notification-action { position:relative; }
+        .notification-badge { position:absolute; top:-6px; right:-6px; min-width:19px; height:19px; display:grid; place-items:center; padding:0 5px; border-radius:999px; color:#fff; background:#ef4444; font-size:.62rem; font-weight:800; }
+        .notification-menu { width:min(360px,calc(100vw - 32px)); padding:.55rem; border:1px solid #e2e8f0; border-radius:14px; box-shadow:none; }
+        .notification-item { display:block; padding:.75rem; border-radius:11px; color:#142033; text-decoration:none; }
+        .notification-item:hover { background:#f0f9ff; }
+        .notification-item strong { display:block; font-size:.82rem; }
+        .notification-item small { display:block; color:#64748b; font-size:.68rem; margin-top:.2rem; }
         .admin-content { padding:30px; }
         .admin-content > .alert { border:1px solid currentColor; border-radius:12px; box-shadow:none; }
         .admin-content .card { border:1px solid #e2e8f0!important; border-radius:14px!important; box-shadow:none!important; }
@@ -74,8 +81,18 @@
     <div class="sidebar-footer"><div class="admin-profile"><span class="profile-avatar">{{ strtoupper(substr(auth()->user()->name, 0, 1)) }}</span><span class="profile-copy"><strong>{{ auth()->user()->name }}</strong><small>{{ auth()->user()->email }}</small></span><form method="POST" action="{{ route('admin.logout') }}">@csrf<button class="logout-icon" title="Logout" aria-label="Logout"><i class="bi bi-box-arrow-right"></i></button></form></div></div>
 </aside>
 <div class="sidebar-overlay" id="sidebarOverlay"></div>
+@php
+    $ratingNotifications = \App\Models\RatingKunjungan::with('wisata')
+        ->where('status', 'disetujui')
+        ->latest()
+        ->limit(5)
+        ->get();
+    $newRatingNotificationCount = \App\Models\RatingKunjungan::where('status', 'disetujui')
+        ->where('created_at', '>=', now()->subDay())
+        ->count();
+@endphp
 <div class="admin-main">
-    <header class="admin-topbar"><button class="sidebar-toggle me-3" id="sidebarToggle" type="button" aria-label="Buka atau tutup sidebar"><i class="bi bi-list fs-5"></i></button><h1 class="topbar-title">@yield('page-title', 'Admin')</h1><div class="ms-auto"><a class="topbar-action" href="{{ route('wisatawan.home') }}" target="_blank" title="Lihat website"><i class="bi bi-globe2"></i></a></div></header>
+    <header class="admin-topbar"><button class="sidebar-toggle me-3" id="sidebarToggle" type="button" aria-label="Buka atau tutup sidebar"><i class="bi bi-list fs-5"></i></button><h1 class="topbar-title">@yield('page-title', 'Admin')</h1><div class="ms-auto d-flex align-items-center gap-2"><div class="dropdown"><button class="topbar-action notification-action" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="Rating terbaru"><i class="bi bi-bell"></i>@if($newRatingNotificationCount > 0)<span class="notification-badge">{{ $newRatingNotificationCount > 9 ? '9+' : $newRatingNotificationCount }}</span>@endif</button><div class="dropdown-menu dropdown-menu-end notification-menu"><div class="px-2 py-1 small fw-bold text-muted">Rating terbaru</div>@forelse($ratingNotifications as $notification)<a class="notification-item" href="{{ route('admin.rating-kunjungan.show', $notification) }}"><strong>{{ $notification->wisata?->nama_wisata ?? 'Wisata dihapus' }}</strong><small><i class="bi bi-star-fill text-warning"></i> {{ $notification->rating }}/5 · {{ $notification->created_at->diffForHumans() }}</small>@if($notification->ulasan)<small>{{ Str::limit($notification->ulasan, 58) }}</small>@endif</a>@empty<div class="px-2 py-3 small text-muted">Belum ada rating.</div>@endforelse<div class="border-top mt-1 pt-1"><a class="notification-item text-primary fw-bold" href="{{ route('admin.rating-kunjungan.index') }}">Lihat semua rating</a></div></div></div><a class="topbar-action" href="{{ route('wisatawan.home') }}" target="_blank" title="Lihat website"><i class="bi bi-globe2"></i></a></div></header>
     <main class="admin-content"><div class="admin-reveal">
         @if(session('success'))<div class="alert alert-success"><i class="bi bi-check-circle-fill me-2"></i>{{ session('success') }}</div>@endif
         @if(session('error'))<div class="alert alert-danger"><i class="bi bi-exclamation-circle-fill me-2"></i>{{ session('error') }}</div>@endif

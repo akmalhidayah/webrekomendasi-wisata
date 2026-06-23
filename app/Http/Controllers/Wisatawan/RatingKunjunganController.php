@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Wisatawan;
 
+use App\Events\RatingKunjunganBaru;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Wisatawan\StoreRatingKunjunganRequest;
 use App\Models\LogAktivitas;
@@ -18,19 +19,22 @@ class RatingKunjunganController extends Controller
         }
 
         $guest = $guestService->getOrCreateGuestVisitor($request);
-        RatingKunjungan::create([
+        $rating = RatingKunjungan::create([
             ...$request->safe()->only(['wisata_id', 'rating', 'ulasan']),
             'guest_visitor_id' => $guest->id,
             'pernah_dikunjungi' => true,
-            'status' => 'pending',
+            'status' => 'disetujui',
         ]);
+
+        event(new RatingKunjunganBaru($rating));
+
         LogAktivitas::create([
             'guest_visitor_id' => $guest->id,
-            'aktivitas' => 'Rating Kunjungan Dikirim',
-            'deskripsi' => 'Pengunjung mengirim rating kunjungan untuk divalidasi admin.',
+            'aktivitas' => 'Rating Kunjungan Baru',
+            'deskripsi' => 'Pengunjung mengirim rating kunjungan dan otomatis disetujui.',
             'ip_address' => $request->ip(),
         ]);
 
-        return back()->with('success', 'Terima kasih, rating Anda berhasil dikirim dan menunggu validasi admin.');
+        return back()->with('success', 'Terima kasih, rating Anda berhasil dikirim.');
     }
 }

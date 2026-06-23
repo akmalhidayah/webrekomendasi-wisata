@@ -89,7 +89,7 @@
 @endonce
 
 @if (! is_null($wisata->rating_tampil))
-    <div class="rating-badge rating-badge-{{ $position }}" title="{{ $wisata->label_rating_tampil }}">
+    <div class="rating-badge rating-badge-{{ $position }}" title="Rating destinasi">
         <span class="rating-badge-icon">
             <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                 <path d="M10 1.6l2.47 5.01 5.53.8-4 3.9.94 5.5L10 14.2l-4.94 2.6.94-5.5-4-3.9 5.53-.8L10 1.6z"/>
@@ -102,9 +102,9 @@
 
         <span class="rating-badge-source">
             @if ($wisata->jumlah_rating_aplikasi > 0)
-                +{{ $wisata->jumlah_rating_aplikasi }} app
+                {{ $wisata->jumlah_rating_aplikasi }} ulasan
             @else
-                Maps
+                rating
             @endif
         </span>
     </div>

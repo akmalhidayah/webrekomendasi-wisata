@@ -24,6 +24,9 @@ return new class extends Migration
             $table->decimal('estimasi_transportasi', 12, 2)->nullable()->default(0);
             $table->decimal('estimasi_biaya_lainnya', 12, 2)->nullable()->default(0);
             $table->decimal('total_estimasi_biaya', 12, 2)->nullable()->default(0);
+            $table->decimal('rating_maps', 2, 1)->nullable();
+            $table->unsignedInteger('jumlah_rating_maps')->default(0);
+            $table->timestamp('rating_maps_updated_at')->nullable();
             $table->string('jam_operasional')->nullable();
             $table->enum('status', ['aktif', 'nonaktif'])->default('aktif')->index();
             $table->string('foto_utama')->nullable();

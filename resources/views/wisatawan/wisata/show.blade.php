@@ -242,6 +242,48 @@
         border-radius: 11px;
     }
 
+    .gallery-trigger {
+        position: relative;
+        display: block;
+        width: 100%;
+        padding: 0;
+        border: 0;
+        border-radius: 11px;
+        background: transparent;
+        overflow: hidden;
+    }
+
+    .gallery-trigger::after {
+        content: '\F52A';
+        position: absolute;
+        right: .65rem;
+        bottom: .65rem;
+        width: 34px;
+        height: 34px;
+        display: grid;
+        place-items: center;
+        border-radius: 999px;
+        color: #075985;
+        background: rgba(255, 255, 255, .88);
+        font-family: bootstrap-icons;
+        font-size: 1rem;
+    }
+
+    #galleryModal .modal-content {
+        border: 1px solid #dfe7ef;
+        border-radius: 18px;
+        box-shadow: none;
+        overflow: hidden;
+        background: #071f31;
+    }
+
+    .gallery-modal-image {
+        width: 100%;
+        max-height: 78vh;
+        object-fit: contain;
+        background: #071f31;
+    }
+
     .review-card {
         height: 100%;
         padding: 1rem;
@@ -314,6 +356,7 @@
 @section('content')
 @php
     $ulasanDisetujui = $wisata->ratingKunjungan->where('status', 'disetujui');
+    $galleryPhotos = $wisata->fotoWisata->filter(fn ($foto) => $foto->foto_url)->values();
 @endphp
 
 <div class="container detail-page">
@@ -356,16 +399,6 @@
 
                     <div class="rating-summary">
                         <x-rating-badge :wisata="$wisata" position="detail" />
-
-                        <span class="rating-note">
-                            @if ($wisata->jumlah_rating_aplikasi > 0)
-                                Berdasarkan rating awal Maps dan {{ $wisata->jumlah_rating_aplikasi }} rating aplikasi yang telah disetujui.
-                            @elseif (! is_null($wisata->rating_maps))
-                                Rating awal berdasarkan data Maps.
-                            @else
-                                Belum ada rating untuk destinasi ini.
-                            @endif
-                        </span>
                     </div>
 
                     <p class="detail-description mb-0">
@@ -420,7 +453,7 @@
                             </a>
                         @endif
 
-                        <a class="btn btn-warning" href="{{ route('wisatawan.survey.index') }}">
+                        <a class="btn btn-warning" href="{{ route('wisatawan.rekomendasi.index') }}">
                             <i class="bi bi-stars"></i>
                             Rekomendasi
                         </a>
@@ -434,51 +467,6 @@
             </div>
         </div>
     </article>
-
-    <section class="detail-section">
-        <h2 class="section-title">
-            <i class="bi bi-star-half"></i>
-            Ringkasan Rating
-        </h2>
-
-        <div class="rating-source-card">
-            <div class="rating-source-item">
-                <small>Rating Maps Awal</small>
-                <strong>
-                    @if (! is_null($wisata->rating_maps))
-                        <i class="bi bi-star-fill text-warning me-1"></i>
-                        {{ number_format((float) $wisata->rating_maps, 1, ',', '.') }}
-                    @else
-                        -
-                    @endif
-                </strong>
-            </div>
-
-            <div class="rating-source-item">
-                <small>Rating Aplikasi Disetujui</small>
-                <strong>
-                    @if (! is_null($wisata->rating_aplikasi_rata_rata))
-                        <i class="bi bi-star-fill text-warning me-1"></i>
-                        {{ number_format($wisata->rating_aplikasi_rata_rata, 1, ',', '.') }}
-                    @else
-                        -
-                    @endif
-                </strong>
-            </div>
-
-            <div class="rating-source-item">
-                <small>Rating Ditampilkan</small>
-                <strong>
-                    @if (! is_null($wisata->rating_tampil))
-                        <i class="bi bi-star-fill text-warning me-1"></i>
-                        {{ number_format($wisata->rating_tampil, 1, ',', '.') }}
-                    @else
-                        -
-                    @endif
-                </strong>
-            </div>
-        </div>
-    </section>
 
     <div class="row g-4">
         <div class="col-lg-5">
@@ -519,14 +507,23 @@
                 </h2>
 
                 <div class="row g-2">
-                    @forelse ($wisata->fotoWisata->filter(fn ($foto) => $foto->foto_url) as $item)
+                    @forelse ($galleryPhotos as $index => $item)
                         <div class="col-6 col-md-4">
-                            <img
-                                class="gallery-image"
-                                src="{{ $item->foto_url }}"
-                                alt="{{ $item->caption ?: $wisata->nama_wisata }}"
-                                loading="lazy"
+                            <button
+                                class="gallery-trigger"
+                                type="button"
+                                data-bs-toggle="modal"
+                                data-bs-target="#galleryModal"
+                                data-gallery-index="{{ $index }}"
+                                aria-label="Buka foto galeri {{ $index + 1 }}"
                             >
+                                <img
+                                    class="gallery-image"
+                                    src="{{ $item->foto_url }}"
+                                    alt="{{ $item->caption ?: $wisata->nama_wisata }}"
+                                    loading="lazy"
+                                >
+                            </button>
                         </div>
                     @empty
                         <div class="col-12 detail-empty">
@@ -578,12 +575,54 @@
             @empty
                 <div class="col-12 detail-empty">
                     <i class="bi bi-chat"></i>
-                    Belum ada ulasan yang disetujui.
+                    Belum ada ulasan.
                 </div>
             @endforelse
         </div>
     </section>
 </div>
+
+@if ($galleryPhotos->isNotEmpty())
+    <div class="modal fade" id="galleryModal" tabindex="-1" aria-labelledby="galleryModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-xl modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header border-0 text-white">
+                    <h2 class="modal-title fs-6" id="galleryModalLabel">
+                        Galeri {{ $wisata->nama_wisata }}
+                    </h2>
+
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+
+                <div id="galleryCarousel" class="carousel slide" data-bs-ride="false">
+                    <div class="carousel-inner">
+                        @foreach ($galleryPhotos as $index => $item)
+                            <div class="carousel-item {{ $index === 0 ? 'active' : '' }}">
+                                <img
+                                    class="gallery-modal-image"
+                                    src="{{ $item->foto_url }}"
+                                    alt="{{ $item->caption ?: $wisata->nama_wisata }}"
+                                >
+                            </div>
+                        @endforeach
+                    </div>
+
+                    @if ($galleryPhotos->count() > 1)
+                        <button class="carousel-control-prev" type="button" data-bs-target="#galleryCarousel" data-bs-slide="prev">
+                            <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                            <span class="visually-hidden">Sebelumnya</span>
+                        </button>
+
+                        <button class="carousel-control-next" type="button" data-bs-target="#galleryCarousel" data-bs-slide="next">
+                            <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                            <span class="visually-hidden">Berikutnya</span>
+                        </button>
+                    @endif
+                </div>
+            </div>
+        </div>
+    </div>
+@endif
 
 <div class="modal fade" id="ratingModal" tabindex="-1" aria-labelledby="ratingModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-fullscreen-sm-down">
@@ -648,7 +687,7 @@
 
                     <div class="alert alert-info small mb-0">
                         <i class="bi bi-info-circle me-1"></i>
-                        Rating yang dikirim akan menunggu validasi admin sebelum tampil di halaman wisata.
+                        Rating langsung tampil setelah dikirim.
                     </div>
                 </div>
 
@@ -678,6 +717,22 @@
                 fields.forEach((field) => {
                     field.disabled = ! checkbox.checked;
                 });
+            });
+        }
+
+        const galleryModal = document.getElementById('galleryModal');
+        const galleryCarousel = document.getElementById('galleryCarousel');
+
+        if (galleryModal && galleryCarousel) {
+            galleryModal.addEventListener('show.bs.modal', (event) => {
+                const trigger = event.relatedTarget;
+                const index = Number(trigger?.getAttribute('data-gallery-index') || 0);
+                const carousel = bootstrap.Carousel.getOrCreateInstance(galleryCarousel, {
+                    interval: false,
+                    ride: false,
+                });
+
+                carousel.to(index);
             });
         }
     });

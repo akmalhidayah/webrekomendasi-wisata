@@ -51,7 +51,7 @@
             <div class="collapse navbar-collapse" id="mainNav"><div class="navbar-nav ms-auto align-items-lg-center gap-lg-1">
                 <a class="nav-link {{ request()->routeIs('wisatawan.home') ? 'active' : '' }}" href="{{ route('wisatawan.home') }}"><i class="bi bi-house-door me-1"></i> Beranda</a>
                 <a class="nav-link {{ request()->routeIs('wisatawan.wisata.*') ? 'active' : '' }}" href="{{ route('wisatawan.wisata.index') }}"><i class="bi bi-map me-1"></i> Destinasi</a>
-                <a class="nav-link nav-recommendation ms-lg-2" href="{{ route('wisatawan.survey.index') }}"><i class="bi bi-stars me-1"></i> Rekomendasi</a>
+                <a class="nav-link nav-recommendation ms-lg-2" href="{{ route('wisatawan.rekomendasi.index') }}"><i class="bi bi-stars me-1"></i> Rekomendasi</a>
                 <a class="nav-link ms-lg-1" href="{{ route('admin.login') }}"><i class="bi bi-person-lock me-1"></i> Admin</a>
             </div></div>
         </div>
@@ -63,7 +63,7 @@
     @if ($errors->any())<div class="container mt-3"><div class="alert alert-danger border-0 shadow-sm rounded-4"><strong>Periksa kembali isian:</strong><ul class="mb-0">@foreach ($errors->all() as $error)<li>{{ $error }}</li>@endforeach</ul></div></div>@endif
     @yield('content')
 </main>
-<button class="floating-recommendation" type="button" aria-label="Dapatkan rekomendasi" @if(request()->routeIs('wisatawan.home')) data-bs-toggle="modal" data-bs-target="#recommendationModal" @else onclick="window.location.href='{{ route('wisatawan.survey.index') }}'" @endif><span class="floating-label">Temukan wisata cocok untukmu</span><i class="bi bi-stars fs-4"></i></button>
+<button class="floating-recommendation" type="button" aria-label="Dapatkan rekomendasi" @if(request()->routeIs('wisatawan.home')) data-bs-toggle="modal" data-bs-target="#recommendationModal" @else onclick="window.location.href='{{ route('wisatawan.rekomendasi.index') }}'" @endif><span class="floating-label">Temukan wisata cocok untukmu</span><i class="bi bi-stars fs-4"></i></button>
 <footer class="mt-5 py-4 text-white" style="background:#071f31"><div class="container"><div class="d-flex flex-wrap align-items-center justify-content-between gap-3"><div class="d-flex align-items-center gap-3"><span class="public-logos"><img src="{{ asset('images/logos/logo-sulsel.png') }}" alt="Logo Sulawesi Selatan"><img src="{{ asset('images/logos/logo-dinas-pariwisata.png') }}" alt="Logo Dinas Pariwisata"></span><strong>Jelajah Makassar</strong></div><span class="text-white-50 small">Makassar, Sulawesi Selatan</span></div></div></footer>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script>document.addEventListener('DOMContentLoaded',()=>{const observer=new IntersectionObserver(entries=>entries.forEach(entry=>{if(entry.isIntersecting){entry.target.classList.add('visible');observer.unobserve(entry.target)}}),{threshold:.12});document.querySelectorAll('.reveal').forEach(el=>observer.observe(el));});</script>

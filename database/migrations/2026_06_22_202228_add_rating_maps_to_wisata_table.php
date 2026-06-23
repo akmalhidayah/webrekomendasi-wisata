@@ -8,6 +8,10 @@ return new class extends Migration
 {
     public function up(): void
     {
+        if (! Schema::hasTable('wisata') || Schema::hasColumn('wisata', 'rating_maps')) {
+            return;
+        }
+
         Schema::table('wisata', function (Blueprint $table) {
             $table->decimal('rating_maps', 2, 1)->nullable()->after('total_estimasi_biaya');
             $table->unsignedInteger('jumlah_rating_maps')->default(0)->after('rating_maps');
@@ -17,6 +21,10 @@ return new class extends Migration
 
     public function down(): void
     {
+        if (! Schema::hasTable('wisata') || ! Schema::hasColumn('wisata', 'rating_maps')) {
+            return;
+        }
+
         Schema::table('wisata', function (Blueprint $table) {
             $table->dropColumn([
                 'rating_maps',

@@ -14,7 +14,7 @@ use Illuminate\View\View;
 
 class RekomendasiController extends Controller
 {
-    public function index(Request $request): View|RedirectResponse
+    public function index(Request $request, CollaborativeFilteringService $recommendationService): View|RedirectResponse
     {
         $guest = $this->guestFromSession($request);
 
@@ -22,7 +22,15 @@ class RekomendasiController extends Controller
             return redirect()->route('wisatawan.survey.index')->with('error', 'Silakan isi survey preferensi terlebih dahulu.');
         }
 
-        return view('wisatawan.rekomendasi.index', compact('guest'));
+        $recommendationService->generateRecommendations($guest, 5);
+        LogAktivitas::create([
+            'guest_visitor_id' => $guest->id,
+            'aktivitas' => 'Rekomendasi Diproses',
+            'deskripsi' => 'Sistem menghasilkan rekomendasi wisata untuk pengunjung.',
+            'ip_address' => $request->ip(),
+        ]);
+
+        return redirect()->route('wisatawan.rekomendasi.hasil');
     }
 
     public function proses(

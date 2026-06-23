@@ -41,7 +41,7 @@ class RatingMapsWisataSeeder extends Seeder
             $wisata = Wisata::where('nama_wisata', $namaWisata)->first();
 
             if (! $wisata) {
-                $wisata = Wisata::where('nama_wisata', 'like', '%' . $namaWisata . '%')->first();
+                $wisata = Wisata::where('nama_wisata', 'like', '%'.$namaWisata.'%')->first();
             }
 
             if ($wisata) {
