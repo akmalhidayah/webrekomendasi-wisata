@@ -115,7 +115,7 @@
 
     .chart-wrap {
         position: relative;
-        min-height: 290px;
+        min-height: 455px;
     }
 
     .chart-wrap.chart-small {
@@ -332,14 +332,12 @@
 
         const comparisonData = @json($chartPerbandingan);
 
-        const compactLabel = (label) => label.length > 18 ? `${label.slice(0, 18)}...` : label;
-
         const comparisonCanvas = document.getElementById('comparisonChart');
         if (comparisonCanvas && comparisonData.length) {
             new Chart(comparisonCanvas, {
                 type: 'line',
                 data: {
-                    labels: comparisonData.map((item) => compactLabel(item.nama)),
+                    labels: comparisonData.map((item) => item.nama),
                     datasets: [
                         {
                             label: 'Direkomendasikan',
@@ -376,10 +374,7 @@
                     responsive: true,
                     maintainAspectRatio: false,
                     plugins: {
-                        legend: {
-                            position: 'bottom',
-                            labels: { usePointStyle: true, boxWidth: 8 },
-                        },
+                        legend: { display: false },
                         tooltip: {
                             callbacks: {
                                 title: (items) => comparisonData[items[0].dataIndex].nama,
@@ -408,7 +403,11 @@
                             title: { display: true, text: 'Rating' },
                             grid: { drawOnChartArea: false },
                         },
-                        x: { grid: { display: false } },
+                        x: {
+                            ticks: { display: false },
+                            grid: { display: false },
+                            border: { display: false },
+                        },
                     },
                 },
             });
