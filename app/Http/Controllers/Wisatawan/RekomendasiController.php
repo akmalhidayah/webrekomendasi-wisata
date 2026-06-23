@@ -66,7 +66,17 @@ class RekomendasiController extends Controller
         $hasil = $guest->hasilRekomendasi()
             ->with('wisata.kategoriWisata')
             ->orderBy('ranking')
-            ->get();
+            ->get()
+            ->sort(fn ($first, $second) => [
+                (float) ($second->wisata?->rating_tampil ?? 0),
+                (float) $second->nilai_prediksi,
+                (float) $second->nilai_similarity,
+            ] <=> [
+                (float) ($first->wisata?->rating_tampil ?? 0),
+                (float) $first->nilai_prediksi,
+                (float) $first->nilai_similarity,
+            ])
+            ->values();
         $isFallback = $hasil->contains(fn ($item) => str_contains($item->metode, 'Fallback'));
 
         return view('wisatawan.rekomendasi.hasil', compact('guest', 'hasil', 'isFallback'));

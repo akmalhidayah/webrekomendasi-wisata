@@ -367,8 +367,8 @@
                 <div class="small">
                     Sistem mencari pengunjung dengan pola pilihan yang mirip, menggabungkannya dengan rating
                     destinasi, lalu menyesuaikan hasilnya berdasarkan kategori dan jenis wisata yang paling cocok
-                    dengan minat Anda. Jika skor cocok antar destinasi berdekatan, destinasi dengan rating lebih
-                    tinggi ditampilkan lebih dulu.
+                    dengan minat Anda. Setelah skor dihitung, urutan akhir ditampilkan berdasarkan rating gabungan
+                    destinasi dari Maps dan aplikasi, lalu skor cocok menjadi penentu berikutnya.
                 </div>
             </div>
         </div>
@@ -436,7 +436,7 @@
 
                                 <span class="rank-badge">
                                     <i class="bi bi-trophy-fill"></i>
-                                    Ranking #{{ $item->ranking }}
+                                    Ranking #{{ $index + 1 }}
                                 </span>
 
                                 <x-rating-badge :wisata="$item->wisata" />

@@ -65,13 +65,11 @@ class CollaborativeFilteringService
         }
 
         usort($predictions, fn (array $first, array $second) => [
-            round($second['nilai_prediksi'], 1),
             $second['skor_rating_destinasi'],
             $second['nilai_prediksi'],
             $second['nilai_similarity'],
             $second['prediksi_cf'],
         ] <=> [
-            round($first['nilai_prediksi'], 1),
             $first['skor_rating_destinasi'],
             $first['nilai_prediksi'],
             $first['nilai_similarity'],
@@ -339,12 +337,10 @@ class CollaborativeFilteringService
             ];
         })
             ->sort(fn (array $first, array $second) => [
-                round($second['nilai_prediksi'], 1),
                 $second['skor_rating_destinasi'],
                 $second['nilai_prediksi'],
                 $second['prediksi_cf'],
             ] <=> [
-                round($first['nilai_prediksi'], 1),
                 $first['skor_rating_destinasi'],
                 $first['nilai_prediksi'],
                 $first['prediksi_cf'],
