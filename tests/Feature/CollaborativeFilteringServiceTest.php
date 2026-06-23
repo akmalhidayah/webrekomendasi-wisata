@@ -38,7 +38,7 @@ class CollaborativeFilteringServiceTest extends TestCase
 
         $this->assertCount(2, $recommendations);
         $this->assertSame($third->id, $recommendations[0]['wisata_id']);
-        $this->assertSame('Collaborative Filtering', $recommendations[0]['metode']);
+        $this->assertSame('Hybrid Collaborative Filtering', $recommendations[0]['metode']);
         $this->assertDatabaseCount('hasil_rekomendasi', 2);
     }
 
@@ -51,8 +51,8 @@ class CollaborativeFilteringServiceTest extends TestCase
         $recommendations = app(CollaborativeFilteringService::class)->generateRecommendations($target, 2);
 
         $this->assertCount(2, $recommendations);
-        $this->assertSame('Collaborative Filtering - Fallback', $recommendations[0]['metode']);
-        $this->assertSame(3.0, $recommendations[0]['nilai_prediksi']);
+        $this->assertSame('Hybrid Collaborative Filtering - Fallback', $recommendations[0]['metode']);
+        $this->assertGreaterThan(3.0, $recommendations[0]['nilai_prediksi']);
         $this->assertDatabaseCount('hasil_rekomendasi', 2);
     }
 

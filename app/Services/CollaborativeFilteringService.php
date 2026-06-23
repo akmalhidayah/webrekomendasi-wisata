@@ -11,7 +11,10 @@ use Illuminate\Support\Facades\DB;
 class CollaborativeFilteringService
 {
     /**
-     * Menghasilkan rekomendasi User-Based Collaborative Filtering untuk satu guest.
+     * Menghasilkan rekomendasi hybrid:
+     * - pola guest lain melalui User-Based Collaborative Filtering,
+     * - kecocokan kategori/jenis wisata dari survei target,
+     * - kualitas destinasi dari rating Maps/aplikasi.
      */
     public function generateRecommendations(GuestVisitor $guestVisitor, int $limit = 5): array
     {
@@ -28,33 +31,100 @@ class CollaborativeFilteringService
             return $this->getFallbackRecommendations($guestVisitor, $limit);
         }
 
-        $predictions = [];
-        foreach ($this->getCandidateWisataIds($targetRatings) as $wisataId) {
-            $prediction = $this->predictRatingForWisata($wisataId, $similarities, $matrix);
+        $preferenceProfile = $this->buildPreferenceProfile($targetRatings);
+        $candidates = Wisata::with('kategoriWisata')
+            ->whereIn('id', $this->getCandidateWisataIds($targetRatings))
+            ->get()
+            ->keyBy('id');
 
-            if ($prediction['nilai_prediksi'] > 0) {
-                $predictions[] = ['wisata_id' => $wisataId, ...$prediction];
-            }
+        $predictions = [];
+        foreach ($candidates as $wisataId => $wisata) {
+            $prediction = $this->predictRatingForWisata($wisataId, $similarities, $matrix);
+            $hasCollaborativeSignal = $prediction['nilai_prediksi'] > 0;
+            $collaborativeScore = $hasCollaborativeSignal ? $prediction['nilai_prediksi'] : 3.0;
+            $preferenceScore = $this->calculatePreferenceScore($wisata, $preferenceProfile);
+            $qualityScore = $this->calculateQualityScore($wisata);
+
+            $predictions[] = [
+                'wisata_id' => $wisataId,
+                'nilai_prediksi' => $this->calculateHybridScore(
+                    $collaborativeScore,
+                    $preferenceScore,
+                    $qualityScore,
+                    $hasCollaborativeSignal,
+                ),
+                'nilai_similarity' => $prediction['nilai_similarity'],
+                'prediksi_cf' => round($collaborativeScore, 4),
+                'skor_preferensi' => round($preferenceScore * 5, 4),
+                'skor_rating_destinasi' => round($qualityScore * 5, 4),
+                'has_collaborative_signal' => $hasCollaborativeSignal,
+            ];
         }
 
         if ($predictions === []) {
             return $this->getFallbackRecommendations($guestVisitor, $limit);
         }
 
-        usort($predictions, fn (array $first, array $second) => $second['nilai_prediksi'] <=> $first['nilai_prediksi']);
+        usort($predictions, fn (array $first, array $second) => [
+            $second['nilai_prediksi'],
+            $second['nilai_similarity'],
+            $second['prediksi_cf'],
+            $second['skor_rating_destinasi'],
+        ] <=> [
+            $first['nilai_prediksi'],
+            $first['nilai_similarity'],
+            $first['prediksi_cf'],
+            $first['skor_rating_destinasi'],
+        ]);
         $recommendations = array_slice($predictions, 0, max(1, $limit));
-        $wisata = Wisata::with('kategoriWisata')->whereIn('id', array_column($recommendations, 'wisata_id'))->get()->keyBy('id');
 
         foreach ($recommendations as $index => &$recommendation) {
             $recommendation['ranking'] = $index + 1;
-            $recommendation['metode'] = 'Collaborative Filtering';
-            $recommendation['wisata'] = $wisata->get($recommendation['wisata_id']);
+            $recommendation['metode'] = 'Hybrid Collaborative Filtering';
+            $recommendation['wisata'] = $candidates->get($recommendation['wisata_id']);
         }
         unset($recommendation);
 
         $this->saveRecommendations($guestVisitor, $recommendations);
 
         return $recommendations;
+    }
+
+    /**
+     * Profil preferensi dibuat dari destinasi yang diberi rating pada survei awal.
+     * Nilai tinggi pada kategori/jenis tertentu akan memberi bonus ke kandidat serupa.
+     *
+     * @param  array<int, int>  $targetRatings
+     * @return array{categories: array<int, float>, types: array<string, float>}
+     */
+    public function buildPreferenceProfile(array $targetRatings): array
+    {
+        $ratedWisata = Wisata::query()
+            ->whereIn('id', array_keys($targetRatings))
+            ->get(['id', 'kategori_wisata_id', 'jenis_wisata']);
+
+        $categories = [];
+        $types = [];
+
+        foreach ($ratedWisata as $wisata) {
+            $score = max(1, min(5, (int) ($targetRatings[$wisata->id] ?? 3))) / 5;
+
+            $categories[$wisata->kategori_wisata_id][] = $score;
+
+            $typeKey = $this->normalizeType($wisata->jenis_wisata);
+            if ($typeKey !== '') {
+                $types[$typeKey][] = $score;
+            }
+        }
+
+        return [
+            'categories' => collect($categories)
+                ->map(fn (array $scores) => array_sum($scores) / count($scores))
+                ->all(),
+            'types' => collect($types)
+                ->map(fn (array $scores) => array_sum($scores) / count($scores))
+                ->all(),
+        ];
     }
 
     /** @return array<int, array<int, int>> */
@@ -165,6 +235,55 @@ class CollaborativeFilteringService
         ];
     }
 
+    /**
+     * Skor 0..1 berdasarkan kesamaan kategori dan jenis wisata dengan survei pengguna.
+     *
+     * @param  array{categories: array<int, float>, types: array<string, float>}  $preferenceProfile
+     */
+    public function calculatePreferenceScore(Wisata $wisata, array $preferenceProfile): float
+    {
+        $categoryScore = $preferenceProfile['categories'][$wisata->kategori_wisata_id] ?? 0.6;
+        $typeScore = $preferenceProfile['types'][$this->normalizeType($wisata->jenis_wisata)] ?? $categoryScore;
+
+        return round(($categoryScore * 0.7) + ($typeScore * 0.3), 4);
+    }
+
+    /**
+     * Skor 0..1 dari rating destinasi. Jika belum ada rating, dipakai nilai netral.
+     */
+    public function calculateQualityScore(Wisata $wisata): float
+    {
+        $rating = $wisata->rating_tampil;
+
+        if ($rating === null) {
+            return 0.6;
+        }
+
+        return round(max(0, min(5, (float) $rating)) / 5, 4);
+    }
+
+    public function calculateHybridScore(
+        float $collaborativeScore,
+        float $preferenceScore,
+        float $qualityScore,
+        bool $hasCollaborativeSignal = true,
+    ): float {
+        $collaborativeWeight = $hasCollaborativeSignal ? 0.60 : 0.35;
+        $preferenceWeight = $hasCollaborativeSignal ? 0.25 : 0.45;
+        $qualityWeight = $hasCollaborativeSignal ? 0.15 : 0.20;
+
+        $score = (($collaborativeScore / 5) * $collaborativeWeight)
+            + ($preferenceScore * $preferenceWeight)
+            + ($qualityScore * $qualityWeight);
+
+        return round(max(0, min(1, $score)) * 5, 4);
+    }
+
+    private function normalizeType(?string $type): string
+    {
+        return str($type ?? '')->lower()->squish()->toString();
+    }
+
     /** @return array<int, int> */
     public function getCandidateWisataIds(array $targetRatings): array
     {
@@ -196,27 +315,47 @@ class CollaborativeFilteringService
     public function getFallbackRecommendations(GuestVisitor $guestVisitor, int $limit = 5): array
     {
         $targetRatings = $this->getTargetRatings($guestVisitor);
+        $preferenceProfile = $this->buildPreferenceProfile($targetRatings);
         $wisata = Wisata::with('kategoriWisata')
             ->withAvg('surveyPreferensi', 'rating_awal')
             ->where('status', 'aktif')
             ->whereNotIn('id', array_keys($targetRatings))
-            ->orderByDesc('survey_preferensi_avg_rating_awal')
-            ->latest('id')
-            ->limit(max(1, $limit))
             ->get();
 
-        $recommendations = $wisata->values()->map(function (Wisata $item, int $index) {
+        $recommendations = $wisata->values()->map(function (Wisata $item) use ($preferenceProfile) {
             $average = $item->survey_preferensi_avg_rating_awal;
+            $collaborativeScore = $average !== null ? (float) $average : 3.0;
+            $preferenceScore = $this->calculatePreferenceScore($item, $preferenceProfile);
+            $qualityScore = $this->calculateQualityScore($item);
 
             return [
                 'wisata_id' => $item->id,
                 'wisata' => $item,
-                'nilai_prediksi' => round($average !== null ? (float) $average : 3.0, 4),
+                'nilai_prediksi' => $this->calculateHybridScore($collaborativeScore, $preferenceScore, $qualityScore, false),
                 'nilai_similarity' => 0.0,
-                'ranking' => $index + 1,
-                'metode' => 'Collaborative Filtering - Fallback',
+                'prediksi_cf' => round($collaborativeScore, 4),
+                'skor_preferensi' => round($preferenceScore * 5, 4),
+                'skor_rating_destinasi' => round($qualityScore * 5, 4),
+                'metode' => 'Hybrid Collaborative Filtering - Fallback',
             ];
-        })->all();
+        })
+            ->sort(fn (array $first, array $second) => [
+                $second['nilai_prediksi'],
+                $second['skor_rating_destinasi'],
+                $second['prediksi_cf'],
+            ] <=> [
+                $first['nilai_prediksi'],
+                $first['skor_rating_destinasi'],
+                $first['prediksi_cf'],
+            ])
+            ->take(max(1, $limit))
+            ->values()
+            ->map(function (array $item, int $index) {
+                $item['ranking'] = $index + 1;
+
+                return $item;
+            })
+            ->all();
 
         $this->saveRecommendations($guestVisitor, $recommendations);
 

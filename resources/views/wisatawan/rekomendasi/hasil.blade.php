@@ -326,8 +326,8 @@
                 </h1>
 
                 <p class="result-subtitle mb-3">
-                    Rekomendasi ini dihasilkan berdasarkan pola preferensi wisatawan melalui metode
-                    <strong>Collaborative Filtering</strong>.
+                    Rekomendasi ini dihitung dari gabungan pola pilihan pengunjung lain, jenis wisata yang Anda sukai,
+                    dan rating destinasi.
                 </p>
 
                 <div class="guest-code">
@@ -365,8 +365,8 @@
             <div>
                 <strong>Informasi Perhitungan</strong>
                 <div class="small">
-                    Sistem membandingkan rating survei Anda dengan guest lain menggunakan Cosine Similarity,
-                    lalu memprediksi destinasi yang paling sesuai dengan preferensi Anda.
+                    Sistem mencari pengunjung dengan pola pilihan yang mirip, lalu memberi nilai tambahan pada
+                    destinasi yang kategori/jenisnya sesuai minat Anda dan memiliki rating destinasi yang baik.
                 </div>
             </div>
         </div>
@@ -380,8 +380,8 @@
                 <div>
                     <strong>Rekomendasi Awal</strong>
                     <div class="small">
-                        Rekomendasi awal ditampilkan berdasarkan data populer karena data preferensi pengguna lain
-                        masih terbatas.
+                        Rekomendasi awal ditampilkan dari gabungan minat kategori, rating destinasi, dan data populer
+                        karena pola pengunjung lain masih terbatas.
                     </div>
                 </div>
             </div>
@@ -467,16 +467,16 @@
 
                                 <div class="score-box">
                                     <div class="score-item">
-                                        <small>Nilai Prediksi</small>
+                                        <small>Skor Cocok</small>
                                         <strong>
-                                            {{ is_null($item->nilai_prediksi) ? '-' : number_format($item->nilai_prediksi, 4, ',', '.') }}
+                                            {{ is_null($item->nilai_prediksi) ? '-' : number_format($item->nilai_prediksi, 2, ',', '.') }}/5
                                         </strong>
                                     </div>
 
                                     <div class="score-item">
-                                        <small>Similarity</small>
+                                        <small>Kemiripan</small>
                                         <strong>
-                                            {{ is_null($item->nilai_similarity) ? '-' : number_format($item->nilai_similarity, 4, ',', '.') }}
+                                            {{ is_null($item->nilai_similarity) ? '-' : number_format($item->nilai_similarity, 2, ',', '.') }}
                                         </strong>
                                     </div>
                                 </div>
