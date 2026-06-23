@@ -1,3 +1,9 @@
+@php
+    $logoSulselPath = 'images/logos/logo-sulsel.png';
+    $logoDinasPath = 'images/logos/logo-dinas-pariwisata.png';
+    $logoSulselUrl = asset($logoSulselPath).(file_exists(public_path($logoSulselPath)) ? '?v='.filemtime(public_path($logoSulselPath)) : '');
+    $logoDinasUrl = asset($logoDinasPath).(file_exists(public_path($logoDinasPath)) ? '?v='.filemtime(public_path($logoDinasPath)) : '');
+@endphp
 <!doctype html>
 <html lang="id">
 <head>
@@ -5,9 +11,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="theme-color" content="#082f49">
     <title>@yield('title', 'Wisata Makassar')</title>
-    <link rel="icon" type="image/png" href="{{ asset('images/logos/logo-dinas-pariwisata.png') }}">
-    <link rel="shortcut icon" type="image/png" href="{{ asset('images/logos/logo-dinas-pariwisata.png') }}">
-    <link rel="apple-touch-icon" href="{{ asset('images/logos/logo-dinas-pariwisata.png') }}">
+    <link rel="icon" type="image/png" href="{{ $logoDinasUrl }}">
+    <link rel="shortcut icon" type="image/png" href="{{ $logoDinasUrl }}">
+    <link rel="apple-touch-icon" href="{{ $logoDinasUrl }}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -50,7 +56,7 @@
 <header class="site-header">
     <nav class="navbar navbar-expand-lg navbar-dark site-nav">
         <div class="container px-lg-4">
-            <a class="navbar-brand d-flex align-items-center gap-2 fw-bold" href="{{ route('wisatawan.home') }}" aria-label="Beranda"><span class="public-logos"><img src="{{ asset('images/logos/logo-sulsel.png') }}" alt="Logo Sulawesi Selatan"><img src="{{ asset('images/logos/logo-dinas-pariwisata.png') }}" alt="Logo Dinas Pariwisata"></span></a>
+            <a class="navbar-brand d-flex align-items-center gap-2 fw-bold" href="{{ route('wisatawan.home') }}" aria-label="Beranda"><span class="public-logos"><img src="{{ $logoSulselUrl }}" alt="Logo Sulawesi Selatan"><img src="{{ $logoDinasUrl }}" alt="Logo Dinas Pariwisata"></span></a>
             <button class="navbar-toggler border-0 shadow-none" type="button" data-bs-toggle="collapse" data-bs-target="#mainNav"><span class="navbar-toggler-icon"></span></button>
             <div class="collapse navbar-collapse" id="mainNav"><div class="navbar-nav ms-auto align-items-lg-center gap-lg-1">
                 <a class="nav-link {{ request()->routeIs('wisatawan.home') ? 'active' : '' }}" href="{{ route('wisatawan.home') }}"><i class="bi bi-house-door me-1"></i> Beranda</a>
@@ -68,7 +74,7 @@
     @yield('content')
 </main>
 <button class="floating-recommendation" type="button" aria-label="Dapatkan rekomendasi" @if(request()->routeIs('wisatawan.home')) data-bs-toggle="modal" data-bs-target="#recommendationModal" @else onclick="window.location.href='{{ route('wisatawan.rekomendasi.index') }}'" @endif><span class="floating-label">Temukan wisata cocok untukmu</span><i class="bi bi-stars fs-4"></i></button>
-<footer class="mt-5 py-4 text-white" style="background:#071f31"><div class="container"><div class="d-flex flex-wrap align-items-center justify-content-between gap-3"><div class="d-flex align-items-center gap-3"><span class="public-logos"><img src="{{ asset('images/logos/logo-sulsel.png') }}" alt="Logo Sulawesi Selatan"><img src="{{ asset('images/logos/logo-dinas-pariwisata.png') }}" alt="Logo Dinas Pariwisata"></span><strong>Jelajah Makassar</strong></div><span class="text-white-50 small">Makassar, Sulawesi Selatan</span></div></div></footer>
+<footer class="mt-5 py-4 text-white" style="background:#071f31"><div class="container"><div class="d-flex flex-wrap align-items-center justify-content-between gap-3"><div class="d-flex align-items-center gap-3"><span class="public-logos"><img src="{{ $logoSulselUrl }}" alt="Logo Sulawesi Selatan"><img src="{{ $logoDinasUrl }}" alt="Logo Dinas Pariwisata"></span><strong>Jelajah Makassar</strong></div><span class="text-white-50 small">Makassar, Sulawesi Selatan</span></div></div></footer>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script>document.addEventListener('DOMContentLoaded',()=>{const observer=new IntersectionObserver(entries=>entries.forEach(entry=>{if(entry.isIntersecting){entry.target.classList.add('visible');observer.unobserve(entry.target)}}),{threshold:.12});document.querySelectorAll('.reveal').forEach(el=>observer.observe(el));});</script>
 @stack('scripts')

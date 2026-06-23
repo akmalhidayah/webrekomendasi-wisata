@@ -16,8 +16,14 @@
 </style>
 @endpush
 @section('content')
+@php
+    $loginLogoSulselPath = 'images/logos/logo-sulsel.png';
+    $loginLogoDinasPath = 'images/logos/logo-dinas-pariwisata.png';
+    $loginLogoSulselUrl = asset($loginLogoSulselPath).(file_exists(public_path($loginLogoSulselPath)) ? '?v='.filemtime(public_path($loginLogoSulselPath)) : '');
+    $loginLogoDinasUrl = asset($loginLogoDinasPath).(file_exists(public_path($loginLogoDinasPath)) ? '?v='.filemtime(public_path($loginLogoDinasPath)) : '');
+@endphp
 <main class="login-page"><section class="login-card">
-    <div class="login-logos"><img src="{{ asset('images/logos/logo-sulsel.png') }}" alt="Logo Sulawesi Selatan"><img src="{{ asset('images/logos/logo-dinas-pariwisata.png') }}" alt="Logo Dinas Pariwisata"></div>
+    <div class="login-logos"><img src="{{ $loginLogoSulselUrl }}" alt="Logo Sulawesi Selatan"><img src="{{ $loginLogoDinasUrl }}" alt="Logo Dinas Pariwisata"></div>
     <div class="text-center mb-4"><h1 class="login-title mb-1">Login Admin</h1><p class="text-muted small mb-0">Sistem Wisata Makassar</p></div>
     @if($errors->any())<div class="alert alert-danger small">{{ $errors->first() }}</div>@endif
     <form method="POST" action="{{ route('admin.login.process') }}">@csrf

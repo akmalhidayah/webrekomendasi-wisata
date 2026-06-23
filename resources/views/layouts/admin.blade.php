@@ -1,3 +1,9 @@
+@php
+    $logoSulselPath = 'images/logos/logo-sulsel.png';
+    $logoDinasPath = 'images/logos/logo-dinas-pariwisata.png';
+    $logoSulselUrl = asset($logoSulselPath).(file_exists(public_path($logoSulselPath)) ? '?v='.filemtime(public_path($logoSulselPath)) : '');
+    $logoDinasUrl = asset($logoDinasPath).(file_exists(public_path($logoDinasPath)) ? '?v='.filemtime(public_path($logoDinasPath)) : '');
+@endphp
 <!doctype html>
 <html lang="id">
 <head>
@@ -5,9 +11,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="theme-color" content="#071f31">
     <title>@yield('title', 'Admin Wisata Makassar')</title>
-    <link rel="icon" type="image/png" href="{{ asset('images/logos/logo-dinas-pariwisata.png') }}">
-    <link rel="shortcut icon" type="image/png" href="{{ asset('images/logos/logo-dinas-pariwisata.png') }}">
-    <link rel="apple-touch-icon" href="{{ asset('images/logos/logo-dinas-pariwisata.png') }}">
+    <link rel="icon" type="image/png" href="{{ $logoDinasUrl }}">
+    <link rel="shortcut icon" type="image/png" href="{{ $logoDinasUrl }}">
+    <link rel="apple-touch-icon" href="{{ $logoDinasUrl }}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -67,7 +73,7 @@
 <body class="{{ auth()->check() ? 'admin-authenticated' : 'guest-admin-page' }}">
 @auth
 <aside class="admin-sidebar" id="adminSidebar">
-    <a class="sidebar-brand" href="{{ route('admin.dashboard') }}"><span class="admin-brand-logos"><img src="{{ asset('images/logos/logo-sulsel.png') }}" alt="Logo Sulawesi Selatan"><img src="{{ asset('images/logos/logo-dinas-pariwisata.png') }}" alt="Logo Dinas Pariwisata"></span><span class="brand-copy"><strong>Admin Wisata</strong></span></a>
+    <a class="sidebar-brand" href="{{ route('admin.dashboard') }}"><span class="admin-brand-logos"><img src="{{ $logoSulselUrl }}" alt="Logo Sulawesi Selatan"><img src="{{ $logoDinasUrl }}" alt="Logo Dinas Pariwisata"></span><span class="brand-copy"><strong>Admin Wisata</strong></span></a>
     <div class="sidebar-scroll">
         <div class="sidebar-section">Ringkasan</div>
         <a class="sidebar-link {{ request()->routeIs('admin.dashboard') ? 'active' : '' }}" href="{{ route('admin.dashboard') }}"><i class="bi bi-grid-1x2-fill"></i><span class="sidebar-label">Dashboard</span></a>
