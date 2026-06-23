@@ -42,43 +42,53 @@ class DashboardController extends Controller
             ->orderByDesc('hasil_rekomendasi_count')
             ->first();
 
-        $chartRekomendasi = Wisata::query()
+        $topRecommendationIds = Wisata::query()
             ->whereHas('hasilRekomendasi')
             ->withCount('hasilRekomendasi')
             ->orderByDesc('hasil_rekomendasi_count')
             ->limit(8)
-            ->get(['id', 'nama_wisata'])
-            ->map(fn (Wisata $wisata) => [
-                'nama' => $wisata->nama_wisata,
-                'total' => (int) $wisata->hasil_rekomendasi_count,
-            ]);
+            ->pluck('id');
 
-        $chartRating = Wisata::query()
+        $topRatingIds = Wisata::query()
             ->whereHas('ratingKunjungan', fn ($query) => $query->where('status', 'disetujui'))
             ->withAvg(['ratingKunjungan as rating_disetujui_avg' => fn ($query) => $query->where('status', 'disetujui')], 'rating')
-            ->withCount(['ratingKunjungan as rating_disetujui_count' => fn ($query) => $query->where('status', 'disetujui')])
             ->orderByDesc('rating_disetujui_avg')
             ->limit(8)
+            ->pluck('id');
+
+        $chartWisataIds = $topRecommendationIds
+            ->merge($topRatingIds)
+            ->unique()
+            ->take(10)
+            ->values();
+
+        $chartPerbandingan = Wisata::query()
+            ->whereIn('id', $chartWisataIds)
+            ->withCount('hasilRekomendasi')
+            ->withAvg(['ratingKunjungan as rating_disetujui_avg' => fn ($query) => $query->where('status', 'disetujui')], 'rating')
+            ->withCount(['ratingKunjungan as rating_disetujui_count' => fn ($query) => $query->where('status', 'disetujui')])
             ->get(['id', 'nama_wisata'])
+            ->sortByDesc('hasil_rekomendasi_count')
+            ->values()
             ->map(fn (Wisata $wisata) => [
                 'nama' => $wisata->nama_wisata,
-                'rating' => round((float) $wisata->rating_disetujui_avg, 2),
-                'total' => (int) $wisata->rating_disetujui_count,
+                'rekomendasi' => (int) $wisata->hasil_rekomendasi_count,
+                'rating' => $wisata->rating_disetujui_avg !== null ? round((float) $wisata->rating_disetujui_avg, 2) : null,
+                'jumlah_rating' => (int) $wisata->rating_disetujui_count,
             ]);
 
-        $chartStatusRating = collect(['disetujui', 'ditolak', 'pending'])
-            ->map(fn (string $status) => [
-                'status' => ucfirst($status),
-                'total' => RatingKunjungan::where('status', $status)->count(),
-            ]);
+        $guestTerbaru = GuestVisitor::query()
+            ->withCount(['surveyPreferensi', 'ratingKunjungan', 'hasilRekomendasi'])
+            ->latest()
+            ->limit(6)
+            ->get();
 
         return view('admin.dashboard', compact(
             'statistik',
             'wisataRatingTertinggi',
             'wisataPalingDirekomendasikan',
-            'chartRekomendasi',
-            'chartRating',
-            'chartStatusRating',
+            'chartPerbandingan',
+            'guestTerbaru',
         ));
     }
 }

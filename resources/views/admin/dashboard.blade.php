@@ -122,6 +122,47 @@
         min-height: 240px;
     }
 
+    .guest-list {
+        display: grid;
+        gap: .7rem;
+    }
+
+    .guest-item {
+        display: flex;
+        justify-content: space-between;
+        gap: .8rem;
+        padding: .85rem;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        background: #f8fafc;
+    }
+
+    .guest-code {
+        display: block;
+        color: #0f172a;
+        font-size: .82rem;
+        font-weight: 800;
+    }
+
+    .guest-meta {
+        display: block;
+        color: #64748b;
+        font-size: .68rem;
+        margin-top: .15rem;
+    }
+
+    .guest-count {
+        flex: 0 0 auto;
+        align-self: center;
+        padding: .35rem .55rem;
+        border-radius: 999px;
+        color: #075985;
+        background: #e0f2fe;
+        font-size: .68rem;
+        font-weight: 800;
+        white-space: nowrap;
+    }
+
     .chart-empty {
         min-height: 240px;
         display: grid;
@@ -229,49 +270,52 @@
     </div>
 </div>
 
-<div class="row g-3 mb-4">
-    <div class="col-xl-7">
+<div class="row g-3">
+    <div class="col-xl-8">
         <div class="chart-card">
-            <h2>Destinasi Paling Sering Direkomendasikan</h2>
-            <p class="text-muted small mb-3">Kurva jumlah kemunculan destinasi pada hasil rekomendasi.</p>
+            <h2>Perbandingan Rekomendasi dan Rating</h2>
+            <p class="text-muted small mb-3">Dua kurva untuk melihat destinasi yang sering direkomendasikan dan nilai ratingnya.</p>
 
-            @if ($chartRekomendasi->isNotEmpty())
+            @if ($chartPerbandingan->isNotEmpty())
                 <div class="chart-wrap">
-                    <canvas id="recommendationChart"></canvas>
+                    <canvas id="comparisonChart"></canvas>
                 </div>
             @else
-                <div class="chart-empty">Belum ada data rekomendasi.</div>
+                <div class="chart-empty">Belum ada data rekomendasi atau rating.</div>
             @endif
         </div>
     </div>
 
-    <div class="col-xl-5">
+    <div class="col-xl-4">
         <div class="chart-card">
-            <h2>Status Rating</h2>
-            <p class="text-muted small mb-3">Komposisi rating masuk berdasarkan status.</p>
+            <h2>Guest Kunjungan Terbaru</h2>
+            <p class="text-muted small mb-3">ID guest terakhir yang mengakses fitur website.</p>
 
-            @if ($chartStatusRating->sum('total') > 0)
-                <div class="chart-wrap chart-small">
-                    <canvas id="ratingStatusChart"></canvas>
+            @if ($guestTerbaru->isNotEmpty())
+                <div class="guest-list">
+                    @foreach ($guestTerbaru as $guest)
+                        <div class="guest-item">
+                            <div>
+                                <span class="guest-code">{{ $guest->kode_guest }}</span>
+                                <span class="guest-meta">
+                                    {{ $guest->created_at->diffForHumans() }}
+                                    @if ($guest->tanggal_akses)
+                                        · {{ $guest->tanggal_akses->format('d-m-Y') }}
+                                    @endif
+                                </span>
+                            </div>
+
+                            <span class="guest-count">
+                                {{ $guest->hasil_rekomendasi_count }} rekom
+                            </span>
+                        </div>
+                    @endforeach
                 </div>
             @else
-                <div class="chart-empty">Belum ada rating.</div>
+                <div class="chart-empty">Belum ada guest.</div>
             @endif
         </div>
     </div>
-</div>
-
-<div class="chart-card">
-    <h2>Rating Destinasi Tertinggi</h2>
-    <p class="text-muted small mb-3">Rata-rata rating dari ulasan pengunjung yang aktif.</p>
-
-    @if ($chartRating->isNotEmpty())
-        <div class="chart-wrap">
-            <canvas id="ratingChart"></canvas>
-        </div>
-    @else
-        <div class="chart-empty">Belum ada data rating destinasi.</div>
-    @endif
 </div>
 @endsection
 
@@ -286,101 +330,84 @@
         Chart.defaults.font.family = "'Manrope', sans-serif";
         Chart.defaults.color = '#475569';
 
-        const recommendationData = @json($chartRekomendasi);
-        const ratingData = @json($chartRating);
-        const ratingStatusData = @json($chartStatusRating);
+        const comparisonData = @json($chartPerbandingan);
 
         const compactLabel = (label) => label.length > 18 ? `${label.slice(0, 18)}...` : label;
 
-        const recommendationCanvas = document.getElementById('recommendationChart');
-        if (recommendationCanvas && recommendationData.length) {
-            new Chart(recommendationCanvas, {
+        const comparisonCanvas = document.getElementById('comparisonChart');
+        if (comparisonCanvas && comparisonData.length) {
+            new Chart(comparisonCanvas, {
                 type: 'line',
                 data: {
-                    labels: recommendationData.map((item) => compactLabel(item.nama)),
-                    datasets: [{
-                        label: 'Direkomendasikan',
-                        data: recommendationData.map((item) => item.total),
-                        borderColor: '#0369a1',
-                        backgroundColor: 'rgba(3, 105, 161, .12)',
-                        fill: true,
-                        tension: .42,
-                        pointRadius: 5,
-                        pointHoverRadius: 7,
-                        pointBackgroundColor: '#f59e0b',
-                        pointBorderColor: '#ffffff',
-                        pointBorderWidth: 2,
-                    }],
+                    labels: comparisonData.map((item) => compactLabel(item.nama)),
+                    datasets: [
+                        {
+                            label: 'Direkomendasikan',
+                            data: comparisonData.map((item) => item.rekomendasi),
+                            yAxisID: 'y',
+                            borderColor: '#0369a1',
+                            backgroundColor: 'rgba(3, 105, 161, .12)',
+                            fill: true,
+                            tension: .42,
+                            pointRadius: 5,
+                            pointHoverRadius: 7,
+                            pointBackgroundColor: '#0369a1',
+                            pointBorderColor: '#ffffff',
+                            pointBorderWidth: 2,
+                        },
+                        {
+                            label: 'Rating',
+                            data: comparisonData.map((item) => item.rating),
+                            yAxisID: 'ratingScale',
+                            borderColor: '#f59e0b',
+                            backgroundColor: 'rgba(245, 158, 11, .12)',
+                            fill: false,
+                            tension: .42,
+                            pointRadius: 5,
+                            pointHoverRadius: 7,
+                            pointBackgroundColor: '#f59e0b',
+                            pointBorderColor: '#ffffff',
+                            pointBorderWidth: 2,
+                            spanGaps: true,
+                        },
+                    ],
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
                     plugins: {
-                        legend: { display: false },
-                        tooltip: { callbacks: { title: (items) => recommendationData[items[0].dataIndex].nama } },
-                    },
-                    scales: {
-                        y: { beginAtZero: true, ticks: { precision: 0 }, grid: { color: '#e2e8f0' } },
-                        x: { grid: { display: false } },
-                    },
-                },
-            });
-        }
-
-        const ratingStatusCanvas = document.getElementById('ratingStatusChart');
-        if (ratingStatusCanvas && ratingStatusData.length) {
-            new Chart(ratingStatusCanvas, {
-                type: 'doughnut',
-                data: {
-                    labels: ratingStatusData.map((item) => item.status),
-                    datasets: [{
-                        data: ratingStatusData.map((item) => item.total),
-                        backgroundColor: ['#22c55e', '#ef4444', '#f59e0b'],
-                        borderColor: '#ffffff',
-                        borderWidth: 4,
-                    }],
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    cutout: '66%',
-                    plugins: {
-                        legend: { position: 'bottom', labels: { usePointStyle: true, boxWidth: 8 } },
-                    },
-                },
-            });
-        }
-
-        const ratingCanvas = document.getElementById('ratingChart');
-        if (ratingCanvas && ratingData.length) {
-            new Chart(ratingCanvas, {
-                type: 'bar',
-                data: {
-                    labels: ratingData.map((item) => compactLabel(item.nama)),
-                    datasets: [{
-                        label: 'Rata-rata rating',
-                        data: ratingData.map((item) => item.rating),
-                        backgroundColor: '#fbbf24',
-                        borderColor: '#d97706',
-                        borderWidth: 1,
-                        borderRadius: 10,
-                        maxBarThickness: 52,
-                    }],
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: { display: false },
+                        legend: {
+                            position: 'bottom',
+                            labels: { usePointStyle: true, boxWidth: 8 },
+                        },
                         tooltip: {
                             callbacks: {
-                                title: (items) => ratingData[items[0].dataIndex].nama,
-                                afterLabel: (item) => `${ratingData[item.dataIndex].total} rating`,
+                                title: (items) => comparisonData[items[0].dataIndex].nama,
+                                afterBody: (items) => {
+                                    const item = comparisonData[items[0].dataIndex];
+                                    return [
+                                        `${item.jumlah_rating} rating pengunjung`,
+                                    ];
+                                },
                             },
                         },
                     },
                     scales: {
-                        y: { beginAtZero: true, max: 5, ticks: { stepSize: 1 }, grid: { color: '#e2e8f0' } },
+                        y: {
+                            beginAtZero: true,
+                            position: 'left',
+                            ticks: { precision: 0 },
+                            title: { display: true, text: 'Jumlah rekomendasi' },
+                            grid: { color: '#e2e8f0' },
+                        },
+                        ratingScale: {
+                            beginAtZero: true,
+                            max: 5,
+                            position: 'right',
+                            ticks: { stepSize: 1 },
+                            title: { display: true, text: 'Rating' },
+                            grid: { drawOnChartArea: false },
+                        },
                         x: { grid: { display: false } },
                     },
                 },
