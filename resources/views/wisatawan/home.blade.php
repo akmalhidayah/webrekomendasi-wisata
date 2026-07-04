@@ -135,25 +135,122 @@
     }
 
     .stat-panel {
-        border: 1px solid rgba(255, 255, 255, .7);
-        border-radius: 26px;
-        background: rgba(255, 255, 255, .9);
-        box-shadow: 0 22px 55px rgba(15, 23, 42, .12);
+        overflow: hidden;
+        border: 1px solid rgba(255, 255, 255, .72);
+        border-radius: 30px;
+        background:
+            linear-gradient(135deg, rgba(255, 255, 255, .96), rgba(240, 249, 255, .92));
+        box-shadow: 0 24px 60px rgba(15, 23, 42, .13);
         backdrop-filter: blur(14px);
     }
 
     .stat-item {
-        padding: 1.5rem;
+        position: relative;
+        overflow: hidden;
+        padding: 1.45rem 1.6rem;
+        isolation: isolate;
+        transition: transform .22s ease, background .22s ease;
+        animation: statLift .65s ease both;
+        animation-delay: var(--stat-delay, 0ms);
+    }
+
+    .stat-item::before {
+        content: '';
+        position: absolute;
+        inset: 10px;
+        z-index: -1;
+        border-radius: 22px;
+        background: rgba(255, 255, 255, .58);
+        opacity: 0;
+        transform: scale(.96);
+        transition: .22s ease;
+    }
+
+    .stat-item::after {
+        content: '';
+        position: absolute;
+        top: -50%;
+        left: -30%;
+        width: 70%;
+        height: 200%;
+        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, .7), transparent);
+        transform: rotate(18deg) translateX(-120%);
+        animation: statShine 4.8s ease-in-out infinite;
+        animation-delay: var(--stat-delay, 0ms);
+        pointer-events: none;
+    }
+
+    .stat-item:hover {
+        transform: translateY(-4px);
+    }
+
+    .stat-item:hover::before {
+        opacity: 1;
+        transform: scale(1);
     }
 
     .stat-icon {
-        width: 48px;
-        height: 48px;
+        width: 54px;
+        height: 54px;
         display: grid;
         place-items: center;
-        border-radius: 16px;
+        border-radius: 18px;
         color: #0369a1;
+        background: linear-gradient(135deg, #e0f2fe, #bae6fd);
+        box-shadow: 0 12px 28px rgba(3, 105, 161, .14);
+    }
+
+    .stat-value {
+        color: #0f172a;
+        font-size: clamp(1.65rem, 3vw, 2.15rem);
+        font-weight: 900;
+        line-height: 1;
+        letter-spacing: -.035em;
+    }
+
+    .stat-label {
+        display: block;
+        margin-top: .25rem;
+        color: #64748b;
+        font-size: .82rem;
+        font-weight: 700;
+    }
+
+    .stat-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: .3rem;
+        margin-top: .45rem;
+        padding: .28rem .55rem;
+        border-radius: 999px;
+        color: #075985;
         background: #e0f2fe;
+        font-size: .66rem;
+        font-weight: 850;
+    }
+
+    @keyframes statLift {
+        from {
+            opacity: 0;
+            transform: translateY(14px);
+        }
+
+        to {
+            opacity: 1;
+            transform: none;
+        }
+    }
+
+    @keyframes statShine {
+        0%,
+        45% {
+            transform: rotate(18deg) translateX(-130%);
+        }
+
+        70%,
+        100% {
+            transform: rotate(18deg) translateX(230%);
+        }
     }
 
     .section-eyebrow {
@@ -398,36 +495,39 @@
     <div class="container stat-wrap reveal">
         <div class="stat-panel">
             <div class="row g-0">
-                <div class="col-md-4 stat-item d-flex align-items-center gap-3 border-end-md">
+                <div class="col-md-4 stat-item d-flex align-items-center gap-3 border-end-md" style="--stat-delay: 40ms">
+                    <div class="stat-icon">
+                        <i class="bi bi-person-check-fill fs-5"></i>
+                    </div>
+
+                    <div>
+                        <div class="stat-value js-count-up" data-count="{{ $totalPengunjungHariIni }}">0</div>
+                        <span class="stat-label">Pengunjung hari ini</span>
+                        <span class="stat-chip"><i class="bi bi-activity"></i> Live session</span>
+                    </div>
+                </div>
+
+                <div class="col-md-4 stat-item d-flex align-items-center gap-3" style="--stat-delay: 140ms">
+                    <div class="stat-icon">
+                        <i class="bi bi-people-fill fs-5"></i>
+                    </div>
+
+                    <div>
+                        <div class="stat-value js-count-up" data-count="{{ $totalPengunjung }}">0</div>
+                        <span class="stat-label">Total pengunjung</span>
+                        <span class="stat-chip"><i class="bi bi-bar-chart-fill"></i> Semua waktu</span>
+                    </div>
+                </div>
+
+                <div class="col-md-4 stat-item d-flex align-items-center gap-3" style="--stat-delay: 240ms">
                     <div class="stat-icon">
                         <i class="bi bi-map-fill fs-5"></i>
                     </div>
 
                     <div>
-                        <div class="h3 fw-bold mb-0">{{ $totalWisata }}+</div>
-                        <small class="text-muted">Destinasi aktif</small>
-                    </div>
-                </div>
-
-                <div class="col-md-4 stat-item d-flex align-items-center gap-3">
-                    <div class="stat-icon">
-                        <i class="bi bi-grid-fill fs-5"></i>
-                    </div>
-
-                    <div>
-                        <div class="h3 fw-bold mb-0">{{ $totalKategori }}</div>
-                        <small class="text-muted">Kategori pilihan</small>
-                    </div>
-                </div>
-
-                <div class="col-md-4 stat-item d-flex align-items-center gap-3">
-                    <div class="stat-icon">
-                        <i class="bi bi-lightning-charge-fill fs-5"></i>
-                    </div>
-
-                    <div>
-                        <div class="h3 fw-bold mb-0">5</div>
-                        <small class="text-muted">Rekomendasi personal</small>
+                        <div class="stat-value js-count-up" data-count="{{ $totalWisata }}">0</div>
+                        <span class="stat-label">Destinasi wisata</span>
+                        <span class="stat-chip"><i class="bi bi-stars"></i> Data aktif</span>
                     </div>
                 </div>
             </div>
@@ -688,6 +788,25 @@
 @push('scripts')
 <script>
     document.addEventListener('DOMContentLoaded', () => {
+        document.querySelectorAll('.js-count-up').forEach((counter) => {
+            const target = Number(counter.dataset.count || 0);
+            const duration = 900;
+            const startTime = performance.now();
+            const formatter = new Intl.NumberFormat('id-ID');
+
+            const tick = (currentTime) => {
+                const progress = Math.min((currentTime - startTime) / duration, 1);
+                const eased = 1 - Math.pow(1 - progress, 3);
+                counter.textContent = formatter.format(Math.round(target * eased));
+
+                if (progress < 1) {
+                    requestAnimationFrame(tick);
+                }
+            };
+
+            requestAnimationFrame(tick);
+        });
+
         if (! sessionStorage.getItem('recommendationTeaserSeen')) {
             setTimeout(() => {
                 const recommendationModal = document.getElementById('recommendationModal');
