@@ -13,7 +13,10 @@ class WisataController extends Controller
     public function index(Request $request): View
     {
         $wisata = Wisata::query()
-            ->with('kategoriWisata')
+            ->with([
+                'kategoriWisata',
+                'hotels' => fn ($query) => $query->where('status', 'aktif'),
+            ])
             ->where('status', 'aktif')
             ->when($request->filled('search'), function ($query) use ($request) {
                 $search = '%'.$request->string('search').'%';
@@ -37,6 +40,7 @@ class WisataController extends Controller
             'kategoriWisata',
             'fasilitasWisata',
             'fotoWisata',
+            'hotels' => fn ($query) => $query->where('status', 'aktif'),
             'ratingKunjungan' => fn ($query) => $query
                 ->where('status', 'disetujui')
                 ->whereNotNull('ulasan')

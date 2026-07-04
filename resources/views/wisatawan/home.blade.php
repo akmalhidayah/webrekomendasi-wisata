@@ -168,6 +168,23 @@
         position: relative;
     }
 
+    .home-budget-badge {
+        position: absolute;
+        right: 14px;
+        bottom: 14px;
+        z-index: 5;
+        display: inline-flex;
+        align-items: center;
+        gap: .38rem;
+        padding: .52rem .75rem;
+        border-radius: 999px;
+        color: #78350f;
+        background: #fbbf24;
+        font-size: .72rem;
+        font-weight: 850;
+        box-shadow: 0 12px 28px rgba(15, 23, 42, .18);
+    }
+
     .category-pill {
         color: #0e7490;
         background: #ecfeff;
@@ -437,6 +454,10 @@
 
     <div class="row g-4">
         @foreach ($wisata as $index => $item)
+            @php
+                $lowestHotelPrice = $item->hotels->min(fn ($hotel) => (float) $hotel->harga_min);
+                $packageStart = $lowestHotelPrice !== null ? (float) $item->total_estimasi_biaya + $lowestHotelPrice : null;
+            @endphp
             <div class="col-md-6 col-xl-4 reveal" style="transition-delay: {{ ($index % 3) * 90 }}ms">
                 <article class="card modern-card h-100">
                     <div class="destination-media overflow-hidden">
@@ -455,6 +476,15 @@
                         @endif
 
                         <x-rating-badge :wisata="$item" />
+
+                        <span class="home-budget-badge">
+                            <i class="bi bi-wallet2"></i>
+                            @if ($packageStart !== null)
+                                Paket Rp {{ number_format($packageStart, 0, ',', '.') }}
+                            @else
+                                Rp {{ number_format($item->total_estimasi_biaya, 0, ',', '.') }}
+                            @endif
+                        </span>
                     </div>
 
                     <div class="card-body p-4 d-flex flex-column">
@@ -477,9 +507,15 @@
                         </p>
 
                         <div class="mt-auto d-flex justify-content-between align-items-center gap-3">
-                            <strong class="text-primary">
-                                Rp {{ number_format($item->total_estimasi_biaya, 0, ',', '.') }}
-                            </strong>
+                            <div>
+                                <strong class="text-primary d-block">
+                                    Rp {{ number_format($item->total_estimasi_biaya, 0, ',', '.') }}
+                                </strong>
+
+                                @if ($packageStart !== null)
+                                    <small class="text-muted">Paket mulai Rp {{ number_format($packageStart, 0, ',', '.') }}</small>
+                                @endif
+                            </div>
 
                             <a
                                 class="btn btn-light rounded-pill px-3 fw-semibold"

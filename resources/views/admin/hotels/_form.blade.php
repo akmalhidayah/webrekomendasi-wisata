@@ -54,7 +54,7 @@
 
         <div class="card shadow-sm">
             <div class="card-header">
-                <strong>Link dan Koordinat</strong>
+                <strong>Link Booking dan Maps</strong>
             </div>
             <div class="card-body">
                 <div class="row g-3">
@@ -65,14 +65,6 @@
                     <div class="col-md-6">
                         <label class="form-label">Link Google Maps</label>
                         <input type="url" class="form-control" name="maps_url" value="{{ old('maps_url', $hotel->maps_url ?? '') }}">
-                    </div>
-                    <div class="col-md-6">
-                        <label class="form-label">Latitude</label>
-                        <input type="number" step="0.0000001" class="form-control" name="latitude" value="{{ old('latitude', $hotel->latitude ?? '') }}">
-                    </div>
-                    <div class="col-md-6">
-                        <label class="form-label">Longitude</label>
-                        <input type="number" step="0.0000001" class="form-control" name="longitude" value="{{ old('longitude', $hotel->longitude ?? '') }}">
                     </div>
                     <div class="col-12">
                         <a class="btn btn-sm btn-outline-secondary" href="https://www.google.com/maps" target="_blank" rel="noopener">

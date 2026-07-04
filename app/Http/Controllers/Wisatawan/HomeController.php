@@ -12,6 +12,7 @@ class HomeController extends Controller
     public function index(): View
     {
         $wisata = Wisata::with('kategoriWisata')
+            ->with(['hotels' => fn ($query) => $query->where('status', 'aktif')])
             ->withAvg(['ratingKunjungan as rata_rata_rating' => fn ($query) => $query->where('status', 'disetujui')], 'rating')
             ->withCount(['ratingKunjungan as jumlah_rating' => fn ($query) => $query->where('status', 'disetujui')])
             ->where('status', 'aktif')

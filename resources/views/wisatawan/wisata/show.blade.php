@@ -234,6 +234,191 @@
         color: #64748b;
     }
 
+    .hotel-section {
+        position: relative;
+        overflow: hidden;
+        border-radius: 24px;
+        background:
+            linear-gradient(135deg, rgba(240, 249, 255, .95), rgba(255, 255, 255, .98));
+    }
+
+    .hotel-section-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 1rem;
+        margin-bottom: 1rem;
+    }
+
+    .hotel-section-copy {
+        color: #64748b;
+        max-width: 720px;
+        font-size: .9rem;
+        line-height: 1.65;
+    }
+
+    .budget-corner {
+        min-width: 190px;
+        padding: .8rem .95rem;
+        border: 1px solid #fde68a;
+        border-radius: 18px;
+        color: #78350f;
+        background: #fffbeb;
+    }
+
+    .budget-corner small {
+        display: block;
+        font-size: .68rem;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: .05em;
+    }
+
+    .budget-corner strong {
+        display: block;
+        margin-top: .15rem;
+        color: #0f172a;
+        font-size: 1rem;
+    }
+
+    .hotel-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 1rem;
+    }
+
+    .hotel-card-public {
+        position: relative;
+        overflow: hidden;
+        min-height: 100%;
+        border: 1px solid #dbe7f0;
+        border-radius: 22px;
+        background: #ffffff;
+        box-shadow: 0 18px 42px rgba(15, 23, 42, .08);
+    }
+
+    .hotel-media-link {
+        position: relative;
+        display: block;
+        overflow: hidden;
+        height: 170px;
+        color: inherit;
+        text-decoration: none;
+        background: #e2e8f0;
+    }
+
+    .hotel-image {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+        transition: transform .28s ease;
+    }
+
+    .hotel-card-public:hover .hotel-image {
+        transform: scale(1.04);
+    }
+
+    .hotel-image-empty {
+        height: 100%;
+        display: grid;
+        place-items: center;
+        color: #0369a1;
+        background:
+            linear-gradient(135deg, #e0f2fe, #f8fafc);
+        font-size: 2rem;
+    }
+
+    .hotel-rank-badge,
+    .hotel-budget-badge {
+        position: absolute;
+        z-index: 2;
+        display: inline-flex;
+        align-items: center;
+        gap: .35rem;
+        border-radius: 999px;
+        font-size: .7rem;
+        font-weight: 800;
+        box-shadow: 0 10px 22px rgba(15, 23, 42, .16);
+    }
+
+    .hotel-rank-badge {
+        top: .75rem;
+        left: .75rem;
+        padding: .42rem .65rem;
+        color: #ffffff;
+        background: #0f172a;
+    }
+
+    .hotel-budget-badge {
+        right: .75rem;
+        bottom: .75rem;
+        padding: .48rem .7rem;
+        color: #78350f;
+        background: #fbbf24;
+    }
+
+    .hotel-card-body {
+        padding: 1rem;
+    }
+
+    .hotel-name {
+        margin: 0 0 .35rem;
+        color: #0f172a;
+        font-size: 1rem;
+        font-weight: 850;
+        line-height: 1.25;
+    }
+
+    .hotel-meta {
+        color: #64748b;
+        font-size: .8rem;
+        line-height: 1.55;
+    }
+
+    .hotel-price-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: .55rem;
+        margin-top: .9rem;
+    }
+
+    .hotel-price-item {
+        padding: .7rem;
+        border: 1px solid #e5eaf0;
+        border-radius: 14px;
+        background: #f8fafc;
+    }
+
+    .hotel-price-item small {
+        display: block;
+        color: #64748b;
+        font-size: .65rem;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: .05em;
+    }
+
+    .hotel-price-item strong {
+        display: block;
+        margin-top: .15rem;
+        color: #0f172a;
+        font-size: .84rem;
+    }
+
+    .hotel-actions {
+        display: flex;
+        gap: .5rem;
+        flex-wrap: wrap;
+        margin-top: 1rem;
+    }
+
+    .hotel-actions .btn {
+        border-radius: 12px;
+        font-size: .78rem;
+        font-weight: 800;
+    }
+
     .gallery-image {
         width: 100%;
         height: 160px;
@@ -346,8 +531,31 @@
             grid-template-columns: 1fr;
         }
 
+        .hotel-section-head,
+        .hotel-price-row {
+            grid-template-columns: 1fr;
+        }
+
+        .hotel-section-head {
+            display: block;
+        }
+
+        .budget-corner {
+            margin-top: 1rem;
+        }
+
+        .hotel-grid {
+            grid-template-columns: 1fr;
+        }
+
         .detail-actions .btn {
             width: 100%;
+        }
+    }
+
+    @media (max-width: 991.98px) {
+        .hotel-grid {
+            grid-template-columns: 1fr;
         }
     }
 </style>
@@ -357,6 +565,9 @@
 @php
     $ulasanDisetujui = $wisata->ratingKunjungan->where('status', 'disetujui');
     $galleryPhotos = $wisata->fotoWisata->filter(fn ($foto) => $foto->foto_url)->values();
+    $relatedHotels = $wisata->hotels->take(3)->values();
+    $lowestHotelPrice = $relatedHotels->min(fn ($hotel) => (float) $hotel->harga_min);
+    $mapsUrl = $wisata->maps_url ?: $wisata->link_maps;
 @endphp
 
 <div class="container detail-page">
@@ -441,10 +652,10 @@
                     </div>
 
                     <div class="detail-actions">
-                        @if ($wisata->link_maps)
+                        @if ($mapsUrl)
                             <a
                                 class="btn btn-outline-secondary"
-                                href="{{ $wisata->link_maps }}"
+                                href="{{ $mapsUrl }}"
                                 target="_blank"
                                 rel="noopener"
                             >
@@ -467,6 +678,109 @@
             </div>
         </div>
     </article>
+
+    @if ($relatedHotels->isNotEmpty())
+        <section class="detail-section hotel-section">
+            <div class="hotel-section-head">
+                <div>
+                    <h2 class="section-title mb-2">
+                        <i class="bi bi-buildings"></i>
+                        Hotel Terkait
+                    </h2>
+                    <p class="hotel-section-copy mb-0">
+                        Pilihan hotel yang dikaitkan admin dengan destinasi ini. Harga paket dihitung dari estimasi biaya wisata ditambah harga mulai hotel.
+                    </p>
+                </div>
+
+                @if ($lowestHotelPrice !== null)
+                    <div class="budget-corner">
+                        <small>Kisaran paket mulai</small>
+                        <strong>Rp {{ number_format((float) $wisata->total_estimasi_biaya + $lowestHotelPrice, 0, ',', '.') }}</strong>
+                        <small>Wisata + hotel</small>
+                    </div>
+                @endif
+            </div>
+
+            <div class="hotel-grid">
+                @foreach ($relatedHotels as $index => $hotel)
+                    @php
+                        $hotelPriceLabel = (float) $hotel->harga_max > (float) $hotel->harga_min
+                            ? 'Rp '.number_format($hotel->harga_min, 0, ',', '.').' - Rp '.number_format($hotel->harga_max, 0, ',', '.')
+                            : 'Mulai Rp '.number_format($hotel->harga_min, 0, ',', '.');
+                        $packageStart = (float) $wisata->total_estimasi_biaya + (float) $hotel->harga_min;
+                        $hotelTargetUrl = $hotel->traveloka_url ?: $hotel->maps_url;
+                    @endphp
+
+                    <article class="hotel-card-public">
+                        <a
+                            class="hotel-media-link"
+                            href="{{ $hotelTargetUrl ?: '#' }}"
+                            @if ($hotelTargetUrl) target="_blank" rel="noopener" @endif
+                            aria-label="Buka {{ $hotel->nama_hotel }}"
+                        >
+                            @if ($hotel->gambar_url)
+                                <img class="hotel-image" src="{{ $hotel->gambar_url }}" alt="{{ $hotel->nama_hotel }}" loading="lazy">
+                            @else
+                                <div class="hotel-image-empty">
+                                    <i class="bi bi-building"></i>
+                                </div>
+                            @endif
+
+                            <span class="hotel-rank-badge">
+                                <i class="bi bi-geo-alt-fill"></i>
+                                Hotel {{ $index + 1 }}
+                            </span>
+
+                            <span class="hotel-budget-badge">
+                                <i class="bi bi-wallet2"></i>
+                                Paket Rp {{ number_format($packageStart, 0, ',', '.') }}
+                            </span>
+                        </a>
+
+                        <div class="hotel-card-body">
+                            <h3 class="hotel-name">{{ $hotel->nama_hotel }}</h3>
+
+                            <div class="hotel-meta">
+                                <i class="bi bi-star-fill text-warning me-1"></i>
+                                {{ $hotel->rating_hotel ? number_format((float) $hotel->rating_hotel, 1, ',', '.') : 'Rating belum tersedia' }}
+                                @if ($hotel->alamat)
+                                    <br><i class="bi bi-pin-map me-1"></i>{{ Str::limit($hotel->alamat, 72) }}
+                                @endif
+                            </div>
+
+                            <div class="hotel-price-row">
+                                <div class="hotel-price-item">
+                                    <small>Harga hotel</small>
+                                    <strong>{{ $hotelPriceLabel }}</strong>
+                                </div>
+
+                                <div class="hotel-price-item">
+                                    <small>Wisata + hotel</small>
+                                    <strong>Rp {{ number_format($packageStart, 0, ',', '.') }}</strong>
+                                </div>
+                            </div>
+
+                            <div class="hotel-actions">
+                                @if ($hotel->traveloka_url)
+                                    <a class="btn btn-primary" href="{{ $hotel->traveloka_url }}" target="_blank" rel="noopener">
+                                        <i class="bi bi-box-arrow-up-right me-1"></i>
+                                        Traveloka
+                                    </a>
+                                @endif
+
+                                @if ($hotel->maps_url)
+                                    <a class="btn btn-outline-secondary" href="{{ $hotel->maps_url }}" target="_blank" rel="noopener">
+                                        <i class="bi bi-map me-1"></i>
+                                        Maps
+                                    </a>
+                                @endif
+                            </div>
+                        </div>
+                    </article>
+                @endforeach
+            </div>
+        </section>
+    @endif
 
     <div class="row g-4">
         <div class="col-lg-5">

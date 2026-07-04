@@ -25,8 +25,6 @@ class StoreHotelRequest extends FormRequest
             'maps_url' => ['nullable', 'url', 'max:2048'],
             'rating_hotel' => ['nullable', 'numeric', 'min:0', 'max:5'],
             'status' => ['required', Rule::in(['aktif', 'nonaktif'])],
-            'latitude' => ['nullable', 'numeric', 'between:-90,90'],
-            'longitude' => ['nullable', 'numeric', 'between:-180,180'],
         ];
     }
 }

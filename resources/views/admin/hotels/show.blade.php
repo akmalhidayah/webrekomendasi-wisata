@@ -29,7 +29,6 @@
                     <dt class="col-sm-4">Rating</dt><dd class="col-sm-8">{{ $hotel->rating_hotel ? number_format((float) $hotel->rating_hotel, 1, ',', '.') : '-' }}</dd>
                     <dt class="col-sm-4">Traveloka</dt><dd class="col-sm-8">@if ($hotel->traveloka_url)<a href="{{ $hotel->traveloka_url }}" target="_blank" rel="noopener">Buka Traveloka</a>@else-@endif</dd>
                     <dt class="col-sm-4">Google Maps</dt><dd class="col-sm-8">@if ($hotel->maps_url)<a href="{{ $hotel->maps_url }}" target="_blank" rel="noopener">Buka Maps</a>@else-@endif</dd>
-                    <dt class="col-sm-4">Koordinat</dt><dd class="col-sm-8">{{ $hotel->latitude && $hotel->longitude ? $hotel->latitude.', '.$hotel->longitude : '-' }}</dd>
                 </dl>
             </div>
         </div>

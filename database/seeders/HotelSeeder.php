@@ -43,6 +43,7 @@ class HotelSeeder extends Seeder
                     'harga_min' => $minPrice,
                     'harga_max' => $maxPrice,
                     'rating_hotel' => $rating,
+                    'gambar' => 'https://placehold.co/800x520/e0f2fe/075985?text='.urlencode($name),
                     'traveloka_url' => "https://www.traveloka.com/id-id/search/hotel?query={$query}",
                     'maps_url' => "https://www.google.com/maps/search/?api=1&query={$query}",
                     'status' => 'aktif',
