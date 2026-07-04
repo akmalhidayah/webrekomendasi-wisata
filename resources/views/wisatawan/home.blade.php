@@ -282,6 +282,98 @@
         box-shadow: 0 12px 28px rgba(15, 23, 42, .18);
     }
 
+    .recommendation-modal .modal-content {
+        overflow: hidden;
+        border: 0;
+        border-radius: 28px;
+        box-shadow: 0 32px 86px rgba(2, 8, 23, .28);
+        animation: introPop .34s ease both;
+    }
+
+    .recommendation-modal .modal-visual {
+        position: relative;
+        min-height: 360px;
+        overflow: hidden;
+        background:
+            linear-gradient(145deg, rgba(3, 105, 161, .88), rgba(15, 118, 110, .84)),
+            url('https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=900&q=80') center/cover;
+    }
+
+    .recommendation-modal .modal-visual::before,
+    .recommendation-modal .modal-visual::after {
+        content: '';
+        position: absolute;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, .22);
+        animation: modalFloat 4.8s ease-in-out infinite;
+    }
+
+    .recommendation-modal .modal-visual::before {
+        width: 110px;
+        height: 110px;
+        top: 48px;
+        left: 44px;
+    }
+
+    .recommendation-modal .modal-visual::after {
+        width: 170px;
+        height: 170px;
+        right: -50px;
+        bottom: 54px;
+        animation-delay: .8s;
+    }
+
+    .intro-anim {
+        position: absolute;
+        top: 42%;
+        left: 50%;
+        width: 106px;
+        height: 106px;
+        display: grid;
+        place-items: center;
+        border-radius: 34px;
+        color: #075985;
+        background: rgba(255, 255, 255, .9);
+        font-size: 2.4rem;
+        transform: translate(-50%, -50%);
+        animation: compassPulse 2.2s ease-in-out infinite;
+        box-shadow: 0 24px 44px rgba(2, 8, 23, .2);
+    }
+
+    @keyframes introPop {
+        from {
+            opacity: 0;
+            transform: translateY(18px) scale(.97);
+        }
+
+        to {
+            opacity: 1;
+            transform: none;
+        }
+    }
+
+    @keyframes modalFloat {
+        0%,
+        100% {
+            transform: translateY(0);
+        }
+
+        50% {
+            transform: translateY(-14px);
+        }
+    }
+
+    @keyframes compassPulse {
+        0%,
+        100% {
+            transform: translate(-50%, -50%) rotate(-4deg) scale(1);
+        }
+
+        50% {
+            transform: translate(-50%, -54%) rotate(5deg) scale(1.05);
+        }
+    }
+
     .category-pill {
         color: #0e7490;
         background: #ecfeff;
@@ -724,6 +816,10 @@
         <div class="modal-content">
             <div class="row g-0">
                 <div class="col-md-5 modal-visual d-flex align-items-end p-4">
+                    <div class="intro-anim" aria-hidden="true">
+                        <i class="bi bi-compass"></i>
+                    </div>
+
                     <div class="text-white">
                         <span class="badge rounded-pill text-bg-warning mb-2">
                             Gratis & tanpa login
@@ -818,17 +914,7 @@
             dismissIntro.addEventListener('click', () => sessionStorage.setItem(introKey, '1'));
         }
 
-        if (! sessionStorage.getItem(introKey)) {
-            setTimeout(() => {
-                const recommendationModal = document.getElementById('recommendationModal');
-
-                if (recommendationModal) {
-                    const modal = new bootstrap.Modal(recommendationModal);
-                    modal.show();
-                    sessionStorage.setItem(introKey, '1');
-                }
-            }, 1200);
-        }
+        sessionStorage.setItem(introKey, sessionStorage.getItem(introKey) || '0');
     });
 </script>
 @endpush

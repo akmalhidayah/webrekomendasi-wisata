@@ -7,6 +7,7 @@ use App\Http\Requests\Wisatawan\StoreSurveyPreferensiRequest;
 use App\Models\LogAktivitas;
 use App\Models\SurveyPreferensi;
 use App\Models\Wisata;
+use App\Services\CollaborativeFilteringService;
 use App\Services\GuestVisitorService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -42,7 +43,11 @@ class SurveyPreferensiController extends Controller
         return view('wisatawan.survey.index', compact('wisata'));
     }
 
-    public function store(StoreSurveyPreferensiRequest $request, GuestVisitorService $service): RedirectResponse
+    public function store(
+        StoreSurveyPreferensiRequest $request,
+        GuestVisitorService $service,
+        CollaborativeFilteringService $recommendationService,
+    ): RedirectResponse
     {
         $guest = $service->getOrCreateGuestVisitor($request);
         $validated = $request->validated();
@@ -80,8 +85,16 @@ class SurveyPreferensiController extends Controller
         });
 
         $request->session()->forget('survey_wisata_ids');
+        $recommendationService->generateRecommendations($guest, 5);
 
-        return redirect()->route('wisatawan.survey.success');
+        LogAktivitas::create([
+            'guest_visitor_id' => $guest->id,
+            'aktivitas' => 'Rekomendasi Diproses',
+            'deskripsi' => 'Sistem menghasilkan rekomendasi wisata untuk pengunjung setelah survei.',
+            'ip_address' => $request->ip(),
+        ]);
+
+        return redirect()->route('wisatawan.rekomendasi.hasil')->with('recommendation_generated', true);
     }
 
     public function success(): View

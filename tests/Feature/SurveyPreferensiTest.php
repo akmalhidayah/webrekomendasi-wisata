@@ -43,7 +43,7 @@ class SurveyPreferensiTest extends TestCase
             'jumlah_malam' => 1,
             'is_location_allowed' => 0,
         ])
-            ->assertRedirect(route('wisatawan.survey.success'));
+            ->assertRedirect(route('wisatawan.rekomendasi.hasil'));
 
         $guest = GuestVisitor::firstOrFail();
         $this->assertDatabaseCount('guest_visitors', 1);
@@ -55,5 +55,6 @@ class SurveyPreferensiTest extends TestCase
             'guest_visitor_id' => $guest->id,
             'aktivitas' => 'Survey Preferensi Disimpan',
         ]);
+        $this->assertSame(5, $guest->hasilRekomendasi()->count());
     }
 }

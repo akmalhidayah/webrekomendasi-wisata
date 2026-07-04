@@ -12,25 +12,15 @@
                         <i class="bi bi-check-circle-fill"></i>
                     </div>
 
-                    <h1 class="h3 fw-bold">
-                        Survei berhasil disimpan
-                    </h1>
+                    <h1 class="h3 fw-bold">Survei berhasil disimpan</h1>
 
                     <p class="text-muted mb-4">
-                        Rekomendasi wisata sedang disiapkan berdasarkan preferensi Anda.
+                        Rekomendasi diproses langsung setelah survei dikirim. Jika halaman hasil belum terbuka, klik tombol di bawah.
                     </p>
 
-                    <form id="processRecommendationForm" method="POST" action="{{ route('wisatawan.rekomendasi.proses') }}">
-                        @csrf
-
-                        <button class="btn btn-warning btn-lg rounded-4 fw-bold" type="submit">
-                            <i class="bi bi-stars me-1"></i>
-                            Lihat Hasil Rekomendasi
-                        </button>
-                    </form>
-
-                    <a class="btn btn-link mt-2 text-decoration-none" href="{{ route('wisatawan.wisata.index') }}">
-                        Lihat daftar wisata
+                    <a class="btn btn-warning btn-lg rounded-4 fw-bold" href="{{ route('wisatawan.rekomendasi.hasil') }}">
+                        <i class="bi bi-stars me-1"></i>
+                        Lihat Hasil Rekomendasi
                     </a>
                 </div>
             </div>
@@ -38,34 +28,3 @@
     </div>
 </div>
 @endsection
-
-@push('scripts')
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-<script>
-    document.addEventListener('DOMContentLoaded', () => {
-        const form = document.getElementById('processRecommendationForm');
-
-        if (!form || typeof Swal === 'undefined') {
-            return;
-        }
-
-        Swal.fire({
-            title: 'Survei tersimpan',
-            text: 'Sekarang sistem akan menyiapkan hasil rekomendasi wisata untuk Anda.',
-            icon: 'success',
-            confirmButtonText: 'Lihat Hasil Rekomendasi',
-            timer: 2200,
-            timerProgressBar: true,
-            allowOutsideClick: false,
-            allowEscapeKey: false,
-            customClass: {
-                popup: 'rounded-4',
-                confirmButton: 'btn btn-warning rounded-4 fw-bold px-4',
-            },
-            buttonsStyling: false,
-        }).then(() => {
-            form.submit();
-        });
-    });
-</script>
-@endpush
