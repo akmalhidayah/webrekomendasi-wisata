@@ -285,17 +285,18 @@
     .recommendation-modal .modal-content {
         overflow: hidden;
         border: 0;
-        border-radius: 28px;
+        border-radius: 26px;
         box-shadow: 0 32px 86px rgba(2, 8, 23, .28);
-        animation: introPop .34s ease both;
+        animation: introPop .32s cubic-bezier(.2, .9, .2, 1) both;
     }
 
     .recommendation-modal .modal-visual {
         position: relative;
-        min-height: 360px;
+        min-height: 340px;
         overflow: hidden;
         background:
-            linear-gradient(145deg, rgba(3, 105, 161, .88), rgba(15, 118, 110, .84)),
+            radial-gradient(circle at 24% 24%, rgba(251, 191, 36, .32), transparent 26%),
+            linear-gradient(145deg, rgba(3, 105, 161, .92), rgba(15, 118, 110, .84)),
             url('https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=900&q=80') center/cover;
     }
 
@@ -304,8 +305,8 @@
         content: '';
         position: absolute;
         border-radius: 999px;
-        background: rgba(255, 255, 255, .22);
-        animation: modalFloat 4.8s ease-in-out infinite;
+        background: rgba(255, 255, 255, .16);
+        animation: modalFloat 4.4s ease-in-out infinite;
     }
 
     .recommendation-modal .modal-visual::before {
@@ -327,17 +328,91 @@
         position: absolute;
         top: 42%;
         left: 50%;
-        width: 106px;
-        height: 106px;
+        width: 138px;
+        height: 138px;
         display: grid;
         place-items: center;
-        border-radius: 34px;
-        color: #075985;
-        background: rgba(255, 255, 255, .9);
-        font-size: 2.4rem;
+        border: 1px solid rgba(255, 255, 255, .36);
+        border-radius: 999px;
+        color: #fff;
+        background: rgba(255, 255, 255, .13);
+        font-size: 2.2rem;
         transform: translate(-50%, -50%);
-        animation: compassPulse 2.2s ease-in-out infinite;
+        animation: compassPulse 2.4s ease-in-out infinite;
         box-shadow: 0 24px 44px rgba(2, 8, 23, .2);
+    }
+
+    .intro-anim::before {
+        content: '';
+        position: absolute;
+        inset: 18px;
+        border: 2px dashed rgba(255, 255, 255, .55);
+        border-radius: inherit;
+        animation: orbitSpin 7s linear infinite;
+    }
+
+    .intro-anim::after {
+        content: '';
+        position: absolute;
+        top: 18px;
+        right: 30px;
+        width: 16px;
+        height: 16px;
+        border: 3px solid #fff;
+        border-radius: 999px;
+        background: #f59e0b;
+        box-shadow: 0 0 0 8px rgba(245, 158, 11, .22);
+    }
+
+    .intro-copy {
+        padding: 2.35rem;
+    }
+
+    .intro-kicker {
+        display: inline-flex;
+        align-items: center;
+        gap: .4rem;
+        margin-bottom: .75rem;
+        color: #0369a1;
+        font-size: .72rem;
+        font-weight: 900;
+        letter-spacing: .11em;
+        text-transform: uppercase;
+    }
+
+    .intro-title {
+        margin-bottom: .65rem;
+        color: #0f172a;
+        font-size: clamp(1.75rem, 4vw, 2.4rem);
+        font-weight: 900;
+        line-height: 1.05;
+        letter-spacing: -.045em;
+    }
+
+    .intro-subtitle {
+        color: #64748b;
+        line-height: 1.65;
+        max-width: 400px;
+    }
+
+    .intro-pills {
+        display: flex;
+        flex-wrap: wrap;
+        gap: .5rem;
+        margin: 1.25rem 0;
+    }
+
+    .intro-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: .35rem;
+        padding: .45rem .68rem;
+        border: 1px solid #dbeafe;
+        border-radius: 999px;
+        color: #075985;
+        background: #eff6ff;
+        font-size: .78rem;
+        font-weight: 800;
     }
 
     @keyframes introPop {
@@ -366,11 +441,17 @@
     @keyframes compassPulse {
         0%,
         100% {
-            transform: translate(-50%, -50%) rotate(-4deg) scale(1);
+            transform: translate(-50%, -50%) scale(1);
         }
 
         50% {
-            transform: translate(-50%, -54%) rotate(5deg) scale(1.05);
+            transform: translate(-50%, -54%) scale(1.05);
+        }
+    }
+
+    @keyframes orbitSpin {
+        to {
+            transform: rotate(360deg);
         }
     }
 
@@ -535,6 +616,19 @@
 
     .stat-item {
         padding: 1rem 1.1rem;
+    }
+
+    .recommendation-modal .modal-visual {
+        min-height: 220px;
+    }
+
+    .intro-anim {
+        width: 108px;
+        height: 108px;
+    }
+
+    .intro-copy {
+        padding: 1.45rem;
     }
 
     }
@@ -832,42 +926,26 @@
                 </div>
 
                 <div class="col-md-7">
-                    <div class="p-4 p-lg-5">
+                    <div class="intro-copy">
                         <button type="button" class="btn-close float-end" data-bs-dismiss="modal"></button>
 
-                        <div class="section-eyebrow mb-2">
+                        <div class="intro-kicker">
                             <i class="bi bi-stars"></i>
-                            Rekomendasi personal
+                            Rekomendasi
                         </div>
 
-                        <h2 class="h3 fw-bold" id="recommendationModalLabel">
-                            Temukan Wisata Makassar yang Paling Cocok untuk Anda
+                        <h2 class="intro-title" id="recommendationModalLabel">
+                            Wisata yang cocok untukmu.
                         </h2>
 
-                        <p class="text-muted">
-                            Sistem akan memberikan rekomendasi berdasarkan minat, budget, hotel, dan lokasi Anda.
+                        <p class="intro-subtitle mb-0">
+                            Jawab survei singkat, sistem menyusun 5 destinasi terbaik.
                         </p>
 
-                        <div class="d-grid gap-2 my-4">
-                            <div>
-                                <i class="bi bi-check-circle-fill text-success me-2"></i>
-                                Berdasarkan rating dan minat wisata
-                            </div>
-
-                            <div>
-                                <i class="bi bi-check-circle-fill text-success me-2"></i>
-                                Menyesuaikan rentang budget
-                            </div>
-
-                            <div>
-                                <i class="bi bi-check-circle-fill text-success me-2"></i>
-                                Bisa menghitung kebutuhan hotel
-                            </div>
-
-                            <div>
-                                <i class="bi bi-check-circle-fill text-success me-2"></i>
-                                Mempertimbangkan jarak dari lokasi Anda
-                            </div>
+                        <div class="intro-pills">
+                            <span class="intro-pill"><i class="bi bi-star-fill"></i>Minat</span>
+                            <span class="intro-pill"><i class="bi bi-wallet2"></i>Budget</span>
+                            <span class="intro-pill"><i class="bi bi-geo-alt-fill"></i>Jarak</span>
                         </div>
 
                         <a class="btn btn-warning btn-modern w-100" href="{{ route('wisatawan.rekomendasi.index') }}">
