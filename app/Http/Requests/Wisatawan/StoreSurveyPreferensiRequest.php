@@ -23,7 +23,14 @@ class StoreSurveyPreferensiRequest extends FormRequest
                     ->where('status', 'aktif')
                     ->whereNull('deleted_at')),
             ],
-            'ratings.*.rating_awal' => ['required', 'integer', 'between:1,5'],
+            'ratings.*.rating_awal' => ['required', 'integer', 'min:1', 'max:5'],
+            'budget_min' => ['required', 'numeric', 'min:0'],
+            'budget_max' => ['required', 'numeric', 'min:0', 'gte:budget_min'],
+            'butuh_hotel' => ['required', 'boolean'],
+            'jumlah_malam' => ['nullable', 'required_if:butuh_hotel,1', 'integer', 'min:1', 'max:30'],
+            'user_latitude' => ['nullable', 'numeric', 'between:-90,90'],
+            'user_longitude' => ['nullable', 'numeric', 'between:-180,180'],
+            'is_location_allowed' => ['nullable', 'boolean'],
         ];
     }
 
@@ -33,6 +40,10 @@ class StoreSurveyPreferensiRequest extends FormRequest
             'ratings.size' => 'Semua 10 destinasi harus diberi rating.',
             'ratings.*.wisata_id.distinct' => 'Destinasi pada survei tidak boleh duplikat.',
             'ratings.*.rating_awal.required' => 'Semua destinasi harus diberi rating.',
+            'budget_min.required' => 'Budget minimum wajib diisi.',
+            'budget_max.required' => 'Budget maksimum wajib diisi.',
+            'budget_max.gte' => 'Budget maksimum tidak boleh lebih kecil dari budget minimum.',
+            'jumlah_malam.required_if' => 'Jumlah malam wajib diisi jika membutuhkan hotel.',
         ];
     }
 

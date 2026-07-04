@@ -45,14 +45,31 @@ class SurveyPreferensiController extends Controller
     public function store(StoreSurveyPreferensiRequest $request, GuestVisitorService $service): RedirectResponse
     {
         $guest = $service->getOrCreateGuestVisitor($request);
+        $validated = $request->validated();
 
-        DB::transaction(function () use ($request, $guest) {
-            foreach ($request->validated('ratings') as $rating) {
+        DB::transaction(function () use ($request, $guest, $validated) {
+            foreach ($validated['ratings'] as $rating) {
                 SurveyPreferensi::updateOrCreate(
                     ['guest_visitor_id' => $guest->id, 'wisata_id' => $rating['wisata_id']],
                     ['rating_awal' => $rating['rating_awal']],
                 );
             }
+
+            $locationAllowed = (bool) ($validated['is_location_allowed'] ?? false);
+            $hasLocation = $locationAllowed
+                && ! empty($validated['user_latitude'])
+                && ! empty($validated['user_longitude']);
+
+            $guest->update([
+                'budget_min' => $validated['budget_min'],
+                'budget_max' => $validated['budget_max'],
+                'butuh_hotel' => (bool) $validated['butuh_hotel'],
+                'jumlah_malam' => (bool) $validated['butuh_hotel'] ? (int) ($validated['jumlah_malam'] ?? 1) : 1,
+                'user_latitude' => $hasLocation ? $validated['user_latitude'] : null,
+                'user_longitude' => $hasLocation ? $validated['user_longitude'] : null,
+                'is_location_allowed' => $hasLocation,
+                'location_captured_at' => $hasLocation ? now() : null,
+            ]);
 
             LogAktivitas::create([
                 'guest_visitor_id' => $guest->id,

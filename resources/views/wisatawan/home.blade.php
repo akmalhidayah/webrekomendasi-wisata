@@ -745,36 +745,40 @@
                         </div>
 
                         <h2 class="h3 fw-bold" id="recommendationModalLabel">
-                            Masih bingung mau ke mana?
+                            Temukan Wisata Makassar yang Paling Cocok untuk Anda
                         </h2>
 
                         <p class="text-muted">
-                            Cukup beri nilai minat pada 10 destinasi. Sistem akan menyiapkan
-                            5 rekomendasi khusus untukmu.
+                            Sistem akan memberikan rekomendasi berdasarkan minat, budget, hotel, dan lokasi Anda.
                         </p>
 
                         <div class="d-grid gap-2 my-4">
                             <div>
                                 <i class="bi bi-check-circle-fill text-success me-2"></i>
-                                Proses kurang dari 2 menit
+                                Berdasarkan rating dan minat wisata
                             </div>
 
                             <div>
                                 <i class="bi bi-check-circle-fill text-success me-2"></i>
-                                Tanpa membuat akun
+                                Menyesuaikan rentang budget
                             </div>
 
                             <div>
                                 <i class="bi bi-check-circle-fill text-success me-2"></i>
-                                Berdasarkan preferensi nyata
+                                Bisa menghitung kebutuhan hotel
+                            </div>
+
+                            <div>
+                                <i class="bi bi-check-circle-fill text-success me-2"></i>
+                                Mempertimbangkan jarak dari lokasi Anda
                             </div>
                         </div>
 
                         <a class="btn btn-warning btn-modern w-100" href="{{ route('wisatawan.rekomendasi.index') }}">
-                            Temukan Wisataku <i class="bi bi-arrow-right ms-1"></i>
+                            Mulai Rekomendasi <i class="bi bi-arrow-right ms-1"></i>
                         </a>
 
-                        <button class="btn btn-link text-muted w-100 mt-2" data-bs-dismiss="modal">
+                        <button class="btn btn-link text-muted w-100 mt-2" data-bs-dismiss="modal" id="dismissRecommendationIntro">
                             Nanti saja
                         </button>
                     </div>
@@ -807,14 +811,21 @@
             requestAnimationFrame(tick);
         });
 
-        if (! sessionStorage.getItem('recommendationTeaserSeen')) {
+        const introKey = 'recommendationIntroDismissed';
+        const dismissIntro = document.getElementById('dismissRecommendationIntro');
+
+        if (dismissIntro) {
+            dismissIntro.addEventListener('click', () => sessionStorage.setItem(introKey, '1'));
+        }
+
+        if (! sessionStorage.getItem(introKey)) {
             setTimeout(() => {
                 const recommendationModal = document.getElementById('recommendationModal');
 
                 if (recommendationModal) {
                     const modal = new bootstrap.Modal(recommendationModal);
                     modal.show();
-                    sessionStorage.setItem('recommendationTeaserSeen', '1');
+                    sessionStorage.setItem(introKey, '1');
                 }
             }, 1200);
         }

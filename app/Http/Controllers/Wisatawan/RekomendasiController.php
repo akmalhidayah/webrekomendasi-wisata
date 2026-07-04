@@ -30,7 +30,7 @@ class RekomendasiController extends Controller
             'ip_address' => $request->ip(),
         ]);
 
-        return redirect()->route('wisatawan.rekomendasi.hasil');
+        return redirect()->route('wisatawan.rekomendasi.hasil')->with('recommendation_generated', true);
     }
 
     public function proses(
@@ -52,7 +52,7 @@ class RekomendasiController extends Controller
             'ip_address' => $request->ip(),
         ]);
 
-        return redirect()->route('wisatawan.rekomendasi.hasil');
+        return redirect()->route('wisatawan.rekomendasi.hasil')->with('recommendation_generated', true);
     }
 
     public function hasil(Request $request): View|RedirectResponse
@@ -64,13 +64,15 @@ class RekomendasiController extends Controller
         }
 
         $hasil = $guest->hasilRekomendasi()
-            ->with('wisata.kategoriWisata')
+            ->with(['wisata.kategoriWisata', 'hotel'])
             ->orderBy('ranking')
             ->get()
             ->values();
         $isFallback = $hasil->contains(fn ($item) => str_contains($item->metode, 'Fallback'));
+        $topRecommendation = $hasil->first();
+        $showResultPopup = (bool) $request->session()->pull('recommendation_generated', false);
 
-        return view('wisatawan.rekomendasi.hasil', compact('guest', 'hasil', 'isFallback'));
+        return view('wisatawan.rekomendasi.hasil', compact('guest', 'hasil', 'isFallback', 'topRecommendation', 'showResultPopup'));
     }
 
     public function reset(Request $request): RedirectResponse

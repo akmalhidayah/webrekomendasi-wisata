@@ -18,11 +18,34 @@ class GuestVisitor extends Model
         'tanggal_akses',
         'ip_address',
         'user_agent',
+        'budget_min',
+        'budget_max',
+        'butuh_hotel',
+        'jumlah_malam',
+        'user_latitude',
+        'user_longitude',
+        'is_location_allowed',
+        'location_captured_at',
     ];
 
     protected function casts(): array
     {
-        return ['tanggal_akses' => 'date'];
+        return [
+            'tanggal_akses' => 'date',
+            'budget_min' => 'decimal:2',
+            'budget_max' => 'decimal:2',
+            'butuh_hotel' => 'boolean',
+            'jumlah_malam' => 'integer',
+            'user_latitude' => 'decimal:7',
+            'user_longitude' => 'decimal:7',
+            'is_location_allowed' => 'boolean',
+            'location_captured_at' => 'datetime',
+        ];
+    }
+
+    public function hasLocation(): bool
+    {
+        return $this->is_location_allowed && $this->user_latitude && $this->user_longitude;
     }
 
     public function surveyPreferensi(): HasMany

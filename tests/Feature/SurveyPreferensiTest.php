@@ -35,13 +35,22 @@ class SurveyPreferensiTest extends TestCase
             ]
         )->all();
 
-        $this->post(route('wisatawan.survey.store'), ['ratings' => $ratings])
+        $this->post(route('wisatawan.survey.store'), [
+            'ratings' => $ratings,
+            'budget_min' => 100000,
+            'budget_max' => 1000000,
+            'butuh_hotel' => 0,
+            'jumlah_malam' => 1,
+            'is_location_allowed' => 0,
+        ])
             ->assertRedirect(route('wisatawan.survey.success'));
 
         $guest = GuestVisitor::firstOrFail();
         $this->assertDatabaseCount('guest_visitors', 1);
         $this->assertDatabaseCount('survey_preferensi', 10);
         $this->assertSame(10, $guest->surveyPreferensi()->count());
+        $this->assertSame('100000.00', $guest->budget_min);
+        $this->assertFalse($guest->butuh_hotel);
         $this->assertDatabaseHas('log_aktivitas', [
             'guest_visitor_id' => $guest->id,
             'aktivitas' => 'Survey Preferensi Disimpan',

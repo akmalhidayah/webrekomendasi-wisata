@@ -10,11 +10,6 @@ use Illuminate\Support\Facades\DB;
 
 class CollaborativeFilteringService
 {
-    /**
-     * Menghasilkan rekomendasi hybrid:
-     * - skor utama dari User-Based Collaborative Filtering dan rating destinasi,
-     * - kecocokan kategori/jenis wisata dari survei target,
-     */
     public function generateRecommendations(GuestVisitor $guestVisitor, int $limit = 5): array
     {
         $targetRatings = $this->getTargetRatings($guestVisitor);
@@ -31,7 +26,10 @@ class CollaborativeFilteringService
         }
 
         $preferenceProfile = $this->buildPreferenceProfile($targetRatings);
-        $candidates = Wisata::with('kategoriWisata')
+        $candidates = Wisata::with([
+            'kategoriWisata',
+            'hotels' => fn ($query) => $query->where('status', 'aktif'),
+        ])
             ->whereIn('id', $this->getCandidateWisataIds($targetRatings))
             ->get()
             ->keyBy('id');
@@ -40,23 +38,41 @@ class CollaborativeFilteringService
         foreach ($candidates as $wisataId => $wisata) {
             $prediction = $this->predictRatingForWisata($wisataId, $similarities, $matrix);
             $hasCollaborativeSignal = $prediction['nilai_prediksi'] > 0;
-            $collaborativeScore = $hasCollaborativeSignal ? $prediction['nilai_prediksi'] : 3.0;
-            $preferenceScore = $this->calculatePreferenceScore($wisata, $preferenceProfile);
             $qualityScore = $this->calculateQualityScore($wisata);
+            $collaborativeScore = $hasCollaborativeSignal ? $prediction['nilai_prediksi'] : max(3.0, $qualityScore * 5);
+            $collaborativeNormalized = $this->clamp($collaborativeScore / 5);
+            $preferenceScore = $this->calculatePreferenceScore($wisata, $preferenceProfile);
+            $estimation = $this->calculateBudgetEstimation($guestVisitor, $wisata);
+            $distance = $this->calculateCandidateDistance($guestVisitor, $wisata);
 
             $predictions[] = [
                 'wisata_id' => $wisataId,
-                'nilai_prediksi' => $this->calculateHybridScore(
-                    $collaborativeScore,
-                    $preferenceScore,
-                    $qualityScore,
-                    $hasCollaborativeSignal,
-                ),
+                'wisata' => $wisata,
                 'nilai_similarity' => $prediction['nilai_similarity'],
                 'prediksi_cf' => round($collaborativeScore, 4),
-                'skor_preferensi' => round($preferenceScore * 5, 4),
-                'skor_rating_destinasi' => round($qualityScore * 5, 4),
+                'skor_cf' => round($collaborativeNormalized, 4),
+                'skor_budget' => round($estimation['skor_budget'], 4),
+                'skor_jarak' => null,
+                'skor_preferensi' => round($preferenceScore, 4),
+                'skor_rating_destinasi' => round($qualityScore, 4),
                 'has_collaborative_signal' => $hasCollaborativeSignal,
+                'hotel_id' => $estimation['hotel_id'],
+                'hotel' => $estimation['hotel'],
+                'hotel_requested' => (bool) $guestVisitor->butuh_hotel,
+                'estimasi_biaya_wisata' => $estimation['estimasi_biaya_wisata'],
+                'estimasi_biaya_hotel' => $estimation['estimasi_biaya_hotel'],
+                'total_estimasi_budget' => $estimation['total_estimasi_budget'],
+                'jarak_km' => $distance,
+                'alasan_rekomendasi' => $this->buildRecommendationReasons(
+                    $collaborativeNormalized,
+                    $estimation['skor_budget'],
+                    null,
+                    $preferenceScore,
+                    $qualityScore,
+                    $estimation['hotel_id'] !== null,
+                    (bool) $guestVisitor->butuh_hotel,
+                    $distance,
+                ),
             ];
         }
 
@@ -64,23 +80,15 @@ class CollaborativeFilteringService
             return $this->getFallbackRecommendations($guestVisitor, $limit);
         }
 
-        usort($predictions, fn (array $first, array $second) => [
-            $second['skor_rating_destinasi'],
-            $second['nilai_prediksi'],
-            $second['nilai_similarity'],
-            $second['prediksi_cf'],
-        ] <=> [
-            $first['skor_rating_destinasi'],
-            $first['nilai_prediksi'],
-            $first['nilai_similarity'],
-            $first['prediksi_cf'],
-        ]);
+        $this->applyDistanceScores($predictions);
+        $this->applyFinalScores($predictions, $guestVisitor->hasLocation());
+        $this->sortRecommendations($predictions);
+
         $recommendations = array_slice($predictions, 0, max(1, $limit));
 
         foreach ($recommendations as $index => &$recommendation) {
             $recommendation['ranking'] = $index + 1;
             $recommendation['metode'] = 'Hybrid Collaborative Filtering';
-            $recommendation['wisata'] = $candidates->get($recommendation['wisata_id']);
         }
         unset($recommendation);
 
@@ -291,6 +299,228 @@ class CollaborativeFilteringService
             ->all();
     }
 
+    /**
+     * @return array{hotel_id: ?int, hotel: mixed, estimasi_biaya_wisata: float, estimasi_biaya_hotel: float, total_estimasi_budget: float, skor_budget: float}
+     */
+    private function calculateBudgetEstimation(GuestVisitor $guestVisitor, Wisata $wisata): array
+    {
+        $tourCost = $this->calculateTourCost($wisata);
+        $hotel = null;
+        $hotelCost = 0.0;
+
+        if ($guestVisitor->butuh_hotel) {
+            $hotel = $this->selectBestHotelForBudget($guestVisitor, $wisata, $tourCost);
+            $hotelCost = $hotel ? ((float) $hotel->harga_min * max(1, (int) $guestVisitor->jumlah_malam)) : 0.0;
+        }
+
+        $total = $tourCost + $hotelCost;
+
+        return [
+            'hotel_id' => $hotel?->id,
+            'hotel' => $hotel,
+            'estimasi_biaya_wisata' => $tourCost,
+            'estimasi_biaya_hotel' => $hotelCost,
+            'total_estimasi_budget' => $total,
+            'skor_budget' => $this->calculateBudgetScore($guestVisitor, $total),
+        ];
+    }
+
+    private function calculateTourCost(Wisata $wisata): float
+    {
+        $total = (float) ($wisata->total_estimasi_biaya ?? 0);
+
+        if ($total > 0) {
+            return $total;
+        }
+
+        return (float) ($wisata->harga_tiket ?? 0)
+            + (float) ($wisata->estimasi_transportasi ?? 0)
+            + (float) ($wisata->estimasi_biaya_lainnya ?? 0);
+    }
+
+    private function selectBestHotelForBudget(GuestVisitor $guestVisitor, Wisata $wisata, float $tourCost): mixed
+    {
+        return $wisata->hotels
+            ->filter(fn ($hotel) => $hotel->status === 'aktif')
+            ->sortByDesc(function ($hotel) use ($guestVisitor, $tourCost) {
+                $hotelCost = (float) $hotel->harga_min * max(1, (int) $guestVisitor->jumlah_malam);
+
+                return $this->calculateBudgetScore($guestVisitor, $tourCost + $hotelCost);
+            })
+            ->first();
+    }
+
+    private function calculateBudgetScore(GuestVisitor $guestVisitor, float $totalBudget): float
+    {
+        $budgetMin = (float) ($guestVisitor->budget_min ?? 0);
+        $budgetMax = (float) ($guestVisitor->budget_max ?? 0);
+
+        if ($budgetMin <= 0 && $budgetMax <= 0) {
+            return 0.6;
+        }
+
+        if ($totalBudget >= $budgetMin && $totalBudget <= $budgetMax) {
+            return 1.0;
+        }
+
+        if ($totalBudget < $budgetMin) {
+            return 0.85;
+        }
+
+        if ($budgetMax <= 0 || $totalBudget <= 0) {
+            return 0.6;
+        }
+
+        return $this->clamp(max(0.2, $budgetMax / $totalBudget));
+    }
+
+    private function calculateCandidateDistance(GuestVisitor $guestVisitor, Wisata $wisata): ?float
+    {
+        if (! $guestVisitor->hasLocation() || ! $wisata->latitude || ! $wisata->longitude) {
+            return null;
+        }
+
+        return $this->calculateDistanceKm(
+            (float) $guestVisitor->user_latitude,
+            (float) $guestVisitor->user_longitude,
+            (float) $wisata->latitude,
+            (float) $wisata->longitude,
+        );
+    }
+
+    private function calculateDistanceKm(float $lat1, float $lon1, float $lat2, float $lon2): ?float
+    {
+        $earthRadius = 6371;
+        $latDelta = deg2rad($lat2 - $lat1);
+        $lonDelta = deg2rad($lon2 - $lon1);
+        $a = sin($latDelta / 2) ** 2
+            + cos(deg2rad($lat1)) * cos(deg2rad($lat2)) * sin($lonDelta / 2) ** 2;
+        $c = 2 * atan2(sqrt($a), sqrt(1 - $a));
+
+        return round($earthRadius * $c, 2);
+    }
+
+    private function applyDistanceScores(array &$predictions): void
+    {
+        $distances = collect($predictions)
+            ->pluck('jarak_km')
+            ->filter(fn ($distance) => $distance !== null)
+            ->map(fn ($distance) => (float) $distance)
+            ->values();
+
+        if ($distances->isEmpty()) {
+            return;
+        }
+
+        $nearest = $distances->min();
+        $farthest = $distances->max();
+
+        foreach ($predictions as &$prediction) {
+            if ($prediction['jarak_km'] === null) {
+                $prediction['skor_jarak'] = null;
+                continue;
+            }
+
+            $prediction['skor_jarak'] = $nearest === $farthest
+                ? 1.0
+                : round($this->clamp(1 - (((float) $prediction['jarak_km'] - $nearest) / ($farthest - $nearest))), 4);
+        }
+        unset($prediction);
+    }
+
+    private function applyFinalScores(array &$predictions, bool $hasLocation): void
+    {
+        foreach ($predictions as &$prediction) {
+            $distanceScore = $prediction['skor_jarak'];
+
+            if ($hasLocation && $distanceScore !== null) {
+                $final = (0.40 * $prediction['skor_cf'])
+                    + (0.25 * $prediction['skor_budget'])
+                    + (0.20 * $distanceScore)
+                    + (0.10 * $prediction['skor_preferensi'])
+                    + (0.05 * $prediction['skor_rating_destinasi']);
+            } else {
+                $final = (0.50 * $prediction['skor_cf'])
+                    + (0.25 * $prediction['skor_budget'])
+                    + (0.15 * $prediction['skor_preferensi'])
+                    + (0.10 * $prediction['skor_rating_destinasi']);
+            }
+
+            $prediction['skor_akhir'] = round($this->clamp($final), 4);
+            $prediction['nilai_prediksi'] = round($prediction['skor_akhir'] * 5, 4);
+            $prediction['alasan_rekomendasi'] = $this->buildRecommendationReasons(
+                $prediction['skor_cf'],
+                $prediction['skor_budget'],
+                $prediction['skor_jarak'],
+                $prediction['skor_preferensi'],
+                $prediction['skor_rating_destinasi'],
+                $prediction['hotel_id'] !== null,
+                (bool) ($prediction['hotel_requested'] ?? false),
+                $prediction['jarak_km'],
+            );
+        }
+        unset($prediction);
+    }
+
+    private function sortRecommendations(array &$predictions): void
+    {
+        usort($predictions, fn (array $first, array $second) => [
+            $second['skor_akhir'],
+            $second['skor_budget'],
+            $second['skor_cf'],
+            $second['skor_rating_destinasi'],
+        ] <=> [
+            $first['skor_akhir'],
+            $first['skor_budget'],
+            $first['skor_cf'],
+            $first['skor_rating_destinasi'],
+        ]);
+    }
+
+    private function buildRecommendationReasons(
+        float $scoreCf,
+        float $scoreBudget,
+        ?float $scoreDistance,
+        float $scorePreference,
+        float $scoreQuality,
+        bool $hasHotel,
+        bool $hotelRequested,
+        ?float $distance,
+    ): array {
+        $reasons = [];
+
+        if ($scoreCf >= 0.6 || $scorePreference >= 0.6) {
+            $reasons[] = 'Cocok dengan pola rating dan preferensi wisata Anda.';
+        }
+
+        if ($scoreBudget >= 0.85) {
+            $reasons[] = 'Estimasi budget masih sesuai dengan rentang yang Anda masukkan.';
+        }
+
+        if ($scoreDistance !== null && $scoreDistance >= 0.65 && $distance !== null) {
+            $reasons[] = 'Destinasi ini termasuk yang relatif dekat dari lokasi Anda.';
+        }
+
+        if ($hotelRequested && $hasHotel) {
+            $reasons[] = 'Tersedia hotel terkait untuk kebutuhan menginap.';
+        }
+
+        if ($hotelRequested && ! $hasHotel) {
+            $reasons[] = 'Hotel terkait belum tersedia, sehingga budget dihitung dari biaya wisata saja.';
+        }
+
+        if ($scoreQuality >= 0.75) {
+            $reasons[] = 'Rating destinasi cukup baik dari data yang tersedia.';
+        }
+
+        return $reasons ?: ['Rekomendasi ini dipilih dari kombinasi rating, budget, dan preferensi Anda.'];
+    }
+
+    private function clamp(float $value, float $min = 0.0, float $max = 1.0): float
+    {
+        return max($min, min($max, $value));
+    }
+
     public function saveRecommendations(GuestVisitor $guestVisitor, array $recommendations): void
     {
         DB::transaction(function () use ($guestVisitor, $recommendations) {
@@ -304,6 +534,18 @@ class CollaborativeFilteringService
                     'nilai_similarity' => round($recommendation['nilai_similarity'], 4),
                     'ranking' => $recommendation['ranking'],
                     'metode' => $recommendation['metode'],
+                    'hotel_id' => $recommendation['hotel_id'] ?? null,
+                    'estimasi_biaya_wisata' => round($recommendation['estimasi_biaya_wisata'] ?? 0, 2),
+                    'estimasi_biaya_hotel' => round($recommendation['estimasi_biaya_hotel'] ?? 0, 2),
+                    'total_estimasi_budget' => round($recommendation['total_estimasi_budget'] ?? 0, 2),
+                    'jarak_km' => isset($recommendation['jarak_km']) ? round($recommendation['jarak_km'], 2) : null,
+                    'skor_cf' => round($recommendation['skor_cf'] ?? 0, 4),
+                    'skor_budget' => round($recommendation['skor_budget'] ?? 0, 4),
+                    'skor_jarak' => isset($recommendation['skor_jarak']) ? round($recommendation['skor_jarak'], 4) : null,
+                    'skor_preferensi' => round($recommendation['skor_preferensi'] ?? 0, 4),
+                    'skor_rating_destinasi' => round($recommendation['skor_rating_destinasi'] ?? 0, 4),
+                    'skor_akhir' => round($recommendation['skor_akhir'] ?? (($recommendation['nilai_prediksi'] ?? 0) / 5), 4),
+                    'alasan_rekomendasi' => $recommendation['alasan_rekomendasi'] ?? [],
                 ]);
             }
         });
@@ -313,38 +555,51 @@ class CollaborativeFilteringService
     {
         $targetRatings = $this->getTargetRatings($guestVisitor);
         $preferenceProfile = $this->buildPreferenceProfile($targetRatings);
-        $wisata = Wisata::with('kategoriWisata')
+        $wisata = Wisata::with([
+            'kategoriWisata',
+            'hotels' => fn ($query) => $query->where('status', 'aktif'),
+        ])
             ->withAvg('surveyPreferensi', 'rating_awal')
             ->where('status', 'aktif')
             ->whereNotIn('id', array_keys($targetRatings))
             ->get();
 
-        $recommendations = $wisata->values()->map(function (Wisata $item) use ($preferenceProfile) {
+        $recommendations = $wisata->values()->map(function (Wisata $item) use ($preferenceProfile, $guestVisitor) {
             $average = $item->survey_preferensi_avg_rating_awal;
-            $collaborativeScore = $average !== null ? (float) $average : 3.0;
-            $preferenceScore = $this->calculatePreferenceScore($item, $preferenceProfile);
             $qualityScore = $this->calculateQualityScore($item);
+            $collaborativeScore = $average !== null ? (float) $average : max(3.0, $qualityScore * 5);
+            $collaborativeNormalized = $this->clamp($collaborativeScore / 5);
+            $preferenceScore = $this->calculatePreferenceScore($item, $preferenceProfile);
+            $estimation = $this->calculateBudgetEstimation($guestVisitor, $item);
+            $distance = $this->calculateCandidateDistance($guestVisitor, $item);
 
             return [
                 'wisata_id' => $item->id,
                 'wisata' => $item,
-                'nilai_prediksi' => $this->calculateHybridScore($collaborativeScore, $preferenceScore, $qualityScore, false),
                 'nilai_similarity' => 0.0,
                 'prediksi_cf' => round($collaborativeScore, 4),
-                'skor_preferensi' => round($preferenceScore * 5, 4),
-                'skor_rating_destinasi' => round($qualityScore * 5, 4),
+                'skor_cf' => round($collaborativeNormalized, 4),
+                'skor_budget' => round($estimation['skor_budget'], 4),
+                'skor_jarak' => null,
+                'skor_preferensi' => round($preferenceScore, 4),
+                'skor_rating_destinasi' => round($qualityScore, 4),
+                'hotel_id' => $estimation['hotel_id'],
+                'hotel' => $estimation['hotel'],
+                'hotel_requested' => (bool) $guestVisitor->butuh_hotel,
+                'estimasi_biaya_wisata' => $estimation['estimasi_biaya_wisata'],
+                'estimasi_biaya_hotel' => $estimation['estimasi_biaya_hotel'],
+                'total_estimasi_budget' => $estimation['total_estimasi_budget'],
+                'jarak_km' => $distance,
+                'alasan_rekomendasi' => [],
                 'metode' => 'Hybrid Collaborative Filtering - Fallback',
             ];
-        })
-            ->sort(fn (array $first, array $second) => [
-                $second['skor_rating_destinasi'],
-                $second['nilai_prediksi'],
-                $second['prediksi_cf'],
-            ] <=> [
-                $first['skor_rating_destinasi'],
-                $first['nilai_prediksi'],
-                $first['prediksi_cf'],
-            ])
+        })->all();
+
+        $this->applyDistanceScores($recommendations);
+        $this->applyFinalScores($recommendations, $guestVisitor->hasLocation());
+        $this->sortRecommendations($recommendations);
+
+        $recommendations = collect($recommendations)
             ->take(max(1, $limit))
             ->values()
             ->map(function (array $item, int $index) {
