@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\StoreWisataRequest;
 use App\Http\Requests\Admin\UpdateWisataRequest;
+use App\Models\Hotel;
 use App\Models\KategoriWisata;
 use App\Models\LogAktivitas;
 use App\Models\Wisata;
@@ -40,14 +41,16 @@ class WisataController extends Controller
     public function create(): View
     {
         $kategori = KategoriWisata::orderBy('nama_kategori')->get();
+        $hotels = Hotel::where('status', 'aktif')->orderBy('nama_hotel')->get();
 
-        return view('admin.wisata.create', compact('kategori'));
+        return view('admin.wisata.create', compact('kategori', 'hotels'));
     }
 
     public function store(StoreWisataRequest $request): RedirectResponse
     {
-        $data = $request->safe()->except('foto_utama');
+        $data = $request->safe()->except(['foto_utama', 'hotel_terkait']);
         $data['slug'] = $this->uniqueSlug($data['nama_wisata']);
+        $this->syncMapsUrl($data);
         $this->setCalculatedCosts($data);
 
         if ($request->hasFile('foto_utama')) {
@@ -55,6 +58,7 @@ class WisataController extends Controller
         }
 
         $wisata = Wisata::create($data);
+        $this->syncHotels($wisata, $request->validated('hotel_terkait', []));
         $this->log($request, 'Tambah Wisata', "Destinasi {$wisata->nama_wisata} ditambahkan.");
 
         return redirect()->route('admin.wisata.show', $wisata)->with('success', 'Destinasi wisata berhasil ditambahkan.');
@@ -62,22 +66,25 @@ class WisataController extends Controller
 
     public function show(Wisata $wisata): View
     {
-        $wisata->load(['kategoriWisata', 'fasilitasWisata', 'fotoWisata']);
+        $wisata->load(['kategoriWisata', 'fasilitasWisata', 'fotoWisata', 'hotels']);
 
         return view('admin.wisata.show', compact('wisata'));
     }
 
     public function edit(Wisata $wisata): View
     {
+        $wisata->load('hotels');
         $kategori = KategoriWisata::orderBy('nama_kategori')->get();
+        $hotels = Hotel::where('status', 'aktif')->orderBy('nama_hotel')->get();
 
-        return view('admin.wisata.edit', compact('wisata', 'kategori'));
+        return view('admin.wisata.edit', compact('wisata', 'kategori', 'hotels'));
     }
 
     public function update(UpdateWisataRequest $request, Wisata $wisata): RedirectResponse
     {
-        $data = $request->safe()->except('foto_utama');
+        $data = $request->safe()->except(['foto_utama', 'hotel_terkait']);
         $data['slug'] = $this->uniqueSlug($data['nama_wisata'], $wisata);
+        $this->syncMapsUrl($data);
         $this->setCalculatedCosts($data);
 
         if ($request->hasFile('foto_utama')) {
@@ -90,6 +97,7 @@ class WisataController extends Controller
         }
 
         $wisata->update($data);
+        $this->syncHotels($wisata, $request->validated('hotel_terkait', []));
         $this->log($request, 'Ubah Wisata', "Destinasi {$wisata->nama_wisata} diperbarui.");
 
         return redirect()->route('admin.wisata.show', $wisata)->with('success', 'Destinasi wisata berhasil diperbarui.');
@@ -111,6 +119,36 @@ class WisataController extends Controller
         }
 
         $data['total_estimasi_biaya'] = $data['harga_tiket'] + $data['estimasi_transportasi'] + $data['estimasi_biaya_lainnya'];
+
+        $data['rating_maps'] = ($data['rating_maps'] ?? '') === '' ? null : (float) $data['rating_maps'];
+        $data['jumlah_rating_maps'] = ($data['jumlah_rating_maps'] ?? '') === '' ? 0 : (int) $data['jumlah_rating_maps'];
+    }
+
+    private function syncMapsUrl(array &$data): void
+    {
+        if (array_key_exists('maps_url', $data)) {
+            $data['link_maps'] = $data['maps_url'] ?: null;
+        }
+    }
+
+    private function syncHotels(Wisata $wisata, array $hotels = []): void
+    {
+        $syncData = [];
+
+        foreach (array_slice($hotels, 0, 3, true) as $index => $hotel) {
+            $hotelId = (int) ($hotel['hotel_id'] ?? 0);
+
+            if ($hotelId <= 0 || isset($syncData[$hotelId])) {
+                continue;
+            }
+
+            $syncData[$hotelId] = [
+                'urutan' => max(1, min(3, (int) $index)),
+                'keterangan' => $hotel['keterangan'] ?? null,
+            ];
+        }
+
+        $wisata->hotels()->sync($syncData);
     }
 
     private function uniqueSlug(string $name, ?Wisata $except = null): string

@@ -5,6 +5,7 @@ use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\FasilitasWisataController;
 use App\Http\Controllers\Admin\FotoWisataController;
 use App\Http\Controllers\Admin\HasilRekomendasiController;
+use App\Http\Controllers\Admin\HotelController;
 use App\Http\Controllers\Admin\KategoriWisataController;
 use App\Http\Controllers\Admin\RatingKunjunganController as AdminRatingKunjunganController;
 use App\Http\Controllers\Admin\SurveyPreferensiController as AdminSurveyPreferensiController;
@@ -49,6 +50,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
 
         Route::resource('kategori-wisata', KategoriWisataController::class)
             ->parameters(['kategori-wisata' => 'kategoriWisata']);
+        Route::resource('hotels', HotelController::class);
         Route::resource('wisata', AdminWisataController::class)
             ->parameters(['wisata' => 'wisata']);
 

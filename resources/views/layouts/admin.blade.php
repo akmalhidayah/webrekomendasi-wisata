@@ -81,6 +81,7 @@
         <div class="sidebar-section">Master Data</div>
         <a class="sidebar-link {{ request()->routeIs('admin.kategori-wisata.*') ? 'active' : '' }}" href="{{ route('admin.kategori-wisata.index') }}"><i class="bi bi-tags-fill"></i><span class="sidebar-label">Kategori Wisata</span></a>
         <a class="sidebar-link {{ request()->routeIs('admin.wisata.*') ? 'active' : '' }}" href="{{ route('admin.wisata.index') }}"><i class="bi bi-map-fill"></i><span class="sidebar-label">Data Wisata</span></a>
+        <a class="sidebar-link {{ request()->routeIs('admin.hotels.*') ? 'active' : '' }}" href="{{ route('admin.hotels.index') }}"><i class="bi bi-building-fill"></i><span class="sidebar-label">Data Hotel</span></a>
         <div class="sidebar-section">Aktivitas</div>
         <a class="sidebar-link {{ request()->routeIs('admin.survey-preferensi.*') ? 'active' : '' }}" href="{{ route('admin.survey-preferensi.index') }}"><i class="bi bi-ui-checks-grid"></i><span class="sidebar-label">Data Survei</span></a>
         <a class="sidebar-link {{ request()->routeIs('admin.hasil-rekomendasi.*') ? 'active' : '' }}" href="{{ route('admin.hasil-rekomendasi.index') }}"><i class="bi bi-stars"></i><span class="sidebar-label">Hasil Rekomendasi</span></a>

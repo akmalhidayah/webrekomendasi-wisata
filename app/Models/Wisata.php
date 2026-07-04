@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\Storage;
@@ -23,6 +24,9 @@ class Wisata extends Model
         'jenis_wisata',
         'deskripsi',
         'alamat',
+        'latitude',
+        'longitude',
+        'maps_url',
         'kecamatan',
         'kota',
         'provinsi',
@@ -46,6 +50,8 @@ class Wisata extends Model
             'estimasi_transportasi' => 'decimal:2',
             'estimasi_biaya_lainnya' => 'decimal:2',
             'total_estimasi_biaya' => 'decimal:2',
+            'latitude' => 'decimal:7',
+            'longitude' => 'decimal:7',
             'rating_maps' => 'decimal:1',
             'jumlah_rating_maps' => 'integer',
             'rating_maps_updated_at' => 'datetime',
@@ -96,6 +102,23 @@ class Wisata extends Model
     public function hasilRekomendasi(): HasMany
     {
         return $this->hasMany(HasilRekomendasi::class);
+    }
+
+    public function hotels(): BelongsToMany
+    {
+        return $this->belongsToMany(Hotel::class, 'wisata_hotels')
+            ->withPivot(['urutan', 'keterangan'])
+            ->withTimestamps()
+            ->orderBy('wisata_hotels.urutan');
+    }
+
+    public function getCoordinateLabelAttribute(): string
+    {
+        if ($this->latitude && $this->longitude) {
+            return $this->latitude.', '.$this->longitude;
+        }
+
+        return 'Koordinat belum diisi';
     }
 
     public function getRatingAplikasiRataRataAttribute(): ?float

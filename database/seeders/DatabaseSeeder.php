@@ -17,6 +17,9 @@ class DatabaseSeeder extends Seeder
         $this->call([
             KategoriWisataSeeder::class,
             WisataSeeder::class,
+            WisataLocationSeeder::class,
+            HotelSeeder::class,
+            WisataHotelSeeder::class,
             AdminSeeder::class,
             RatingMapsWisataSeeder::class,
         ]);
