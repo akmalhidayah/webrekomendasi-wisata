@@ -261,8 +261,103 @@
         letter-spacing: .14em;
     }
 
+    .featured-destinations {
+        scroll-margin-top: 110px;
+    }
+
     .destination-media {
         position: relative;
+    }
+
+    .home-destination-card {
+        position: relative;
+        overflow: hidden;
+        border: 1px solid rgba(219, 234, 254, .9);
+        border-radius: 28px;
+        background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+        box-shadow: 0 22px 55px rgba(15, 23, 42, .1);
+    }
+
+    .home-destination-card::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+        border-radius: inherit;
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, .85);
+    }
+
+    .home-destination-card:hover {
+        transform: translateY(-8px);
+        border-color: rgba(125, 211, 252, .95);
+        box-shadow: 0 30px 70px rgba(15, 23, 42, .16);
+    }
+
+    .home-destination-card .destination-media::after {
+        content: '';
+        position: absolute;
+        inset: auto 0 0;
+        height: 42%;
+        pointer-events: none;
+        background: linear-gradient(180deg, transparent, rgba(2, 6, 23, .42));
+        z-index: 2;
+    }
+
+    .home-destination-card .destination-img {
+        height: 250px;
+    }
+
+    .home-rank-badge,
+    .home-distance-badge {
+        position: absolute;
+        z-index: 6;
+        display: inline-flex;
+        align-items: center;
+        gap: .42rem;
+        border-radius: 999px;
+        font-weight: 900;
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        box-shadow: 0 14px 32px rgba(15, 23, 42, .18);
+    }
+
+    .home-rank-badge {
+        left: 14px;
+        top: 14px;
+        padding: .48rem .72rem;
+        color: #0f172a;
+        background: rgba(255, 255, 255, .92);
+        border: 1px solid rgba(255, 255, 255, .85);
+        font-size: .74rem;
+    }
+
+    .home-distance-badge {
+        left: 14px;
+        bottom: 14px;
+        max-width: calc(100% - 28px);
+        padding: .55rem .76rem;
+        color: #042f2e;
+        background: rgba(204, 251, 241, .96);
+        border: 1px solid rgba(153, 246, 228, .95);
+        font-size: .78rem;
+        z-index: 7;
+    }
+
+    .home-distance-badge.is-muted {
+        color: #475569;
+        background: rgba(248, 250, 252, .94);
+        border-color: rgba(226, 232, 240, .95);
+    }
+
+    .home-distance-action {
+        border: 0;
+        cursor: pointer;
+    }
+
+    .home-distance-action:hover,
+    .home-distance-action:focus {
+        color: #075985;
+        background: rgba(224, 242, 254, .96);
     }
 
     .home-budget-badge {
@@ -280,6 +375,63 @@
         font-size: .72rem;
         font-weight: 850;
         box-shadow: 0 12px 28px rgba(15, 23, 42, .18);
+    }
+
+    .home-card-body {
+        padding: 1.35rem;
+    }
+
+    .home-card-title {
+        min-height: 3rem;
+        color: #0f172a;
+        font-size: 1.16rem;
+        font-weight: 900;
+        line-height: 1.3;
+        letter-spacing: 0;
+    }
+
+    .home-card-address {
+        min-height: 2.7rem;
+        color: #64748b;
+        font-size: .88rem;
+        line-height: 1.55;
+    }
+
+    .home-card-description {
+        min-height: 4.65rem;
+        color: #475569;
+        line-height: 1.58;
+    }
+
+    .home-card-footer {
+        display: flex;
+        align-items: flex-end;
+        justify-content: space-between;
+        gap: 1rem;
+        padding-top: 1rem;
+        border-top: 1px solid #edf2f7;
+    }
+
+    .home-price-label {
+        color: #64748b;
+        font-size: .68rem;
+        font-weight: 900;
+        text-transform: uppercase;
+        letter-spacing: .08em;
+    }
+
+    .home-detail-btn {
+        border: 0;
+        border-radius: 999px;
+        color: #0f172a;
+        background: #ffffff;
+        box-shadow: 0 10px 24px rgba(15, 23, 42, .08);
+    }
+
+    .home-detail-btn:hover,
+    .home-detail-btn:focus {
+        color: #ffffff;
+        background: #0369a1;
     }
 
     .recommendation-modal .modal-content {
@@ -559,6 +711,10 @@
     .home-shell {
         padding: 10px 8px 0;
     }
+
+    .home-destination-card .destination-img {
+        height: 235px;
+    }
 }
 
 @media (max-width: 575.98px) {
@@ -629,6 +785,21 @@
 
     .intro-copy {
         padding: 1.45rem;
+    }
+
+    .home-card-title,
+    .home-card-address,
+    .home-card-description {
+        min-height: auto;
+    }
+
+    .home-card-footer {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .home-detail-btn {
+        width: 100%;
     }
 
     }
@@ -721,7 +892,7 @@
     </div>
 </div>
 
-<section class="container py-5 mt-4">
+<section class="container py-5 mt-4 featured-destinations" id="featured-destinations">
     <div class="d-flex flex-wrap justify-content-between align-items-end gap-3 mb-4 reveal">
         <div>
             <div class="section-eyebrow mb-2">Pilihan teratas</div>
@@ -733,7 +904,7 @@
 
         </div>
 
-        <a class="btn btn-outline-primary btn-modern" href="{{ route('wisatawan.wisata.index') }}">
+        <a class="btn btn-outline-primary btn-modern" href="{{ route('wisatawan.wisata.index', $userLocation ?? []) }}">
             Lihat semua <i class="bi bi-arrow-right ms-1"></i>
         </a>
     </div>
@@ -745,7 +916,7 @@
                 $packageStart = $lowestHotelPrice !== null ? (float) $item->total_estimasi_biaya + $lowestHotelPrice : null;
             @endphp
             <div class="col-md-6 col-xl-4 reveal" style="transition-delay: {{ ($index % 3) * 90 }}ms">
-                <article class="card modern-card h-100">
+                <article class="card modern-card home-destination-card h-100">
                     <div class="destination-media overflow-hidden">
                         @if ($item->foto_url)
                             <img
@@ -761,50 +932,76 @@
                             </div>
                         @endif
 
+                        <span class="home-rank-badge">
+                            <i class="bi bi-trophy-fill text-warning"></i>
+                            Top {{ str_pad((string) ($index + 1), 2, '0', STR_PAD_LEFT) }}
+                        </span>
+
                         <x-rating-badge :wisata="$item" />
 
-                        <span class="home-budget-badge">
-                            <i class="bi bi-wallet2"></i>
-                            @if ($packageStart !== null)
-                                Paket Rp {{ number_format($packageStart, 0, ',', '.') }}
+                        @if ($userLocation !== null)
+                            @if ($item->distance_km !== null)
+                                <span class="home-distance-badge">
+                                    <i class="bi bi-navigation-fill"></i>
+                                    {{ number_format((float) $item->distance_km, 1, ',', '.') }} km dari Anda
+                                </span>
                             @else
-                                Rp {{ number_format($item->total_estimasi_biaya, 0, ',', '.') }}
+                                <span class="home-distance-badge is-muted">
+                                    <i class="bi bi-signpost"></i>
+                                    Jarak belum tersedia
+                                </span>
                             @endif
-                        </span>
+                        @else
+                            <button class="home-distance-badge is-muted home-distance-action js-home-location" type="button">
+                                <i class="bi bi-crosshair"></i>
+                                Aktifkan lokasi
+                            </button>
+                        @endif
                     </div>
 
-                    <div class="card-body p-4 d-flex flex-column">
-                        <span class="badge category-pill align-self-start rounded-pill px-3 py-2 mb-3">
-                            <i class="bi bi-tag-fill me-1"></i>
-                            {{ $item->kategoriWisata->nama_kategori }}
-                        </span>
+                    <div class="card-body home-card-body d-flex flex-column">
+                        <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+                            <span class="badge category-pill rounded-pill px-3 py-2">
+                                <i class="bi bi-tag-fill me-1"></i>
+                                {{ $item->kategoriWisata->nama_kategori }}
+                            </span>
 
-                        <h3 class="h5 fw-bold">
+                            <span class="home-price-label">
+                                @if ($packageStart !== null)
+                                    Paket tersedia
+                                @else
+                                    Tiket wisata
+                                @endif
+                            </span>
+                        </div>
+
+                        <h3 class="home-card-title mb-2">
                             {{ $item->nama_wisata }}
                         </h3>
 
-                        <p class="text-muted small mb-3">
+                        <p class="home-card-address mb-3">
                             <i class="bi bi-geo-alt me-1"></i>
                             {{ Str::limit($item->alamat, 78) }}
                         </p>
 
-                        <p class="text-secondary">
+                        <p class="home-card-description mb-3">
                             {{ Str::limit($item->deskripsi, 105) }}
                         </p>
 
-                        <div class="mt-auto d-flex justify-content-between align-items-center gap-3">
+                        <div class="home-card-footer mt-auto">
                             <div>
-                                <strong class="text-primary d-block">
+                                <span class="home-price-label d-block mb-1">Mulai dari</span>
+                                <strong class="text-primary d-block fs-5">
                                     Rp {{ number_format($item->total_estimasi_biaya, 0, ',', '.') }}
                                 </strong>
 
                                 @if ($packageStart !== null)
-                                    <small class="text-muted">Paket mulai Rp {{ number_format($packageStart, 0, ',', '.') }}</small>
+                                    <small class="text-muted">Wisata + hotel Rp {{ number_format($packageStart, 0, ',', '.') }}</small>
                                 @endif
                             </div>
 
                             <a
-                                class="btn btn-light rounded-pill px-3 fw-semibold"
+                                class="btn home-detail-btn px-3 fw-bold"
                                 href="{{ route('wisatawan.wisata.show', $item->slug) }}"
                             >
                                 Detail <i class="bi bi-arrow-up-right"></i>
@@ -983,6 +1180,102 @@
             };
 
             requestAnimationFrame(tick);
+        });
+
+        const storageKey = 'wisataUserLocation';
+        const url = new URL(window.location.href);
+
+        const isValidLocation = (location) => {
+            if (!location) {
+                return false;
+            }
+
+            const lat = Number(location.lat);
+            const lng = Number(location.lng);
+
+            return Number.isFinite(lat)
+                && Number.isFinite(lng)
+                && lat >= -90
+                && lat <= 90
+                && lng >= -180
+                && lng <= 180;
+        };
+
+        const readStoredLocation = () => {
+            try {
+                const location = JSON.parse(localStorage.getItem(storageKey) || 'null');
+
+                return isValidLocation(location) ? location : null;
+            } catch (error) {
+                localStorage.removeItem(storageKey);
+
+                return null;
+            }
+        };
+
+        const redirectWithLocation = (location) => {
+            if (!isValidLocation(location)) {
+                return;
+            }
+
+            localStorage.setItem(storageKey, JSON.stringify(location));
+            url.searchParams.set('lat', location.lat);
+            url.searchParams.set('lng', location.lng);
+            window.location.href = url.toString();
+        };
+
+        const storedLocation = readStoredLocation();
+        const urlLocation = {
+            lat: url.searchParams.get('lat'),
+            lng: url.searchParams.get('lng'),
+        };
+        const urlHasLocation = url.searchParams.has('lat') && url.searchParams.has('lng');
+        const urlLocationIsValid = isValidLocation(urlLocation);
+
+        if (urlLocationIsValid) {
+            localStorage.setItem(storageKey, JSON.stringify(urlLocation));
+        } else if ((!urlHasLocation || !urlLocationIsValid) && storedLocation) {
+            redirectWithLocation(storedLocation);
+            return;
+        }
+
+        document.querySelectorAll('.js-home-location').forEach((button) => {
+            button.addEventListener('click', () => {
+                if (!navigator.geolocation) {
+                    button.innerHTML = '<i class="bi bi-exclamation-circle"></i> Browser tidak mendukung lokasi';
+                    return;
+                }
+
+                button.disabled = true;
+                button.innerHTML = '<i class="bi bi-hourglass-split"></i> Mengambil lokasi...';
+
+                navigator.geolocation.getCurrentPosition((position) => {
+                    redirectWithLocation({
+                        lat: position.coords.latitude.toFixed(7),
+                        lng: position.coords.longitude.toFixed(7),
+                    });
+                }, () => {
+                    button.disabled = false;
+                    button.innerHTML = '<i class="bi bi-crosshair"></i> Aktifkan lokasi';
+                }, {
+                    enableHighAccuracy: true,
+                    timeout: 10000,
+                    maximumAge: 300000,
+                });
+            });
+        });
+
+        document.querySelectorAll('a[href^="#"]').forEach((link) => {
+            link.addEventListener('click', (event) => {
+                const target = document.querySelector(link.getAttribute('href'));
+
+                if (!target) {
+                    return;
+                }
+
+                event.preventDefault();
+                target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            });
         });
 
         const introKey = 'recommendationIntroDismissed';
