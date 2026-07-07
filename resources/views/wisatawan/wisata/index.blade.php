@@ -119,6 +119,41 @@
         line-height: 1.6;
     }
 
+    .wisata-distance {
+        display: inline-flex;
+        align-items: center;
+        gap: .4rem;
+        width: fit-content;
+        max-width: 100%;
+        margin-top: .75rem;
+        padding: .48rem .68rem;
+        border: 1px solid #dbeafe;
+        border-radius: 999px;
+        color: #075985;
+        background: #eff6ff;
+        font-size: .78rem;
+        font-weight: 800;
+        line-height: 1.25;
+    }
+
+    .wisata-distance.is-muted {
+        color: #64748b;
+        background: #f8fafc;
+        border-color: #e2e8f0;
+    }
+
+    .wisata-location-btn {
+        border: 0;
+        cursor: pointer;
+        text-align: left;
+    }
+
+    .wisata-location-btn:hover,
+    .wisata-location-btn:focus {
+        color: #0369a1;
+        background: #e0f2fe;
+    }
+
     .wisata-price-grid {
         display: grid;
         grid-template-columns: 1fr 1fr;
@@ -155,9 +190,39 @@
         font-weight: 800;
     }
 
+    .wisata-pagination {
+        margin: 2rem 0 .5rem;
+        padding: 1rem 0;
+    }
+
+    .wisata-pagination nav {
+        display: flex;
+        justify-content: center;
+    }
+
+    .wisata-pagination .pagination {
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: .35rem;
+        margin-bottom: 0;
+    }
+
+    .wisata-pagination .page-link {
+        border-radius: 12px;
+        border-color: #dbeafe;
+        color: #0369a1;
+        font-weight: 800;
+        box-shadow: 0 8px 18px rgba(15, 23, 42, .06);
+    }
+
+    .wisata-pagination .page-item.active .page-link {
+        border-color: #0369a1;
+        background: #0369a1;
+    }
+
     @media (max-width: 575.98px) {
         .wisata-list-page {
-            padding-top: 1.8rem;
+            padding-top: 2.2rem;
         }
 
         .wisata-card-media {
@@ -176,6 +241,11 @@
     <h1 class="wisata-list-title">Daftar Wisata Makassar</h1>
 
     <form class="wisata-filter mb-4">
+        @if ($hasUserLocation)
+            <input type="hidden" name="lat" id="wisataFilterLat" value="{{ $userLocation['lat'] }}">
+            <input type="hidden" name="lng" id="wisataFilterLng" value="{{ $userLocation['lng'] }}">
+        @endif
+
         <div class="row g-2">
             <div class="col-md-7">
                 <input class="form-control" name="search" value="{{ request('search') }}" placeholder="Cari nama, jenis, atau alamat">
@@ -193,6 +263,15 @@
             </div>
         </div>
     </form>
+
+    @unless ($hasUserLocation)
+        <div class="alert alert-info border-0 rounded-4 shadow-sm mb-4 d-flex flex-wrap align-items-center justify-content-between gap-3" id="wisataLocationNotice">
+            <span><i class="bi bi-geo-alt-fill me-2"></i>Aktifkan lokasi untuk melihat jarak destinasi dari posisi Anda.</span>
+            <button class="btn btn-sm btn-primary rounded-pill fw-bold wisata-location-trigger" type="button">
+                Aktifkan lokasi
+            </button>
+        </div>
+    @endunless
 
     <div class="row g-4">
         @forelse ($wisata as $item)
@@ -238,6 +317,25 @@
                             {{ Str::limit($item->alamat, 92) }}
                         </p>
 
+                        @if ($hasUserLocation)
+                            @if ($item->distance_km !== null)
+                                <div class="wisata-distance">
+                                    <i class="bi bi-signpost-split-fill"></i>
+                                    Jarak dari lokasi Anda: {{ number_format((float) $item->distance_km, 1, '.', '') }} km
+                                </div>
+                            @else
+                                <div class="wisata-distance is-muted">
+                                    <i class="bi bi-signpost"></i>
+                                    Jarak belum tersedia
+                                </div>
+                            @endif
+                        @else
+                            <button class="wisata-distance is-muted wisata-location-btn wisata-location-trigger" type="button">
+                                <i class="bi bi-crosshair"></i>
+                                Aktifkan lokasi untuk melihat jarak destinasi
+                            </button>
+                        @endif
+
                         <div class="wisata-price-grid">
                             <div class="wisata-price-item">
                                 <small>Estimasi wisata</small>
@@ -267,6 +365,110 @@
         @endforelse
     </div>
 
-    <div class="mt-4">{{ $wisata->links() }}</div>
+    <div class="wisata-pagination">{{ $wisata->withQueryString()->links('pagination::bootstrap-5') }}</div>
 </div>
 @endsection
+
+@push('scripts')
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const storageKey = 'wisataUserLocation';
+        const latInput = document.getElementById('wisataFilterLat');
+        const lngInput = document.getElementById('wisataFilterLng');
+        const url = new URL(window.location.href);
+
+        const isValidLocation = (location) => {
+            if (!location) {
+                return false;
+            }
+
+            const lat = Number(location.lat);
+            const lng = Number(location.lng);
+
+            return Number.isFinite(lat)
+                && Number.isFinite(lng)
+                && lat >= -90
+                && lat <= 90
+                && lng >= -180
+                && lng <= 180;
+        };
+
+        const readStoredLocation = () => {
+            try {
+                const location = JSON.parse(localStorage.getItem(storageKey) || 'null');
+
+                return isValidLocation(location) ? location : null;
+            } catch (error) {
+                localStorage.removeItem(storageKey);
+
+                return null;
+            }
+        };
+
+        const applyLocationToForm = (location) => {
+            if (!latInput || !lngInput || !isValidLocation(location)) {
+                return;
+            }
+
+            latInput.value = location.lat;
+            lngInput.value = location.lng;
+        };
+
+        const redirectWithLocation = (location) => {
+            if (!isValidLocation(location)) {
+                return;
+            }
+
+            localStorage.setItem(storageKey, JSON.stringify(location));
+            url.searchParams.set('lat', location.lat);
+            url.searchParams.set('lng', location.lng);
+            window.location.href = url.toString();
+        };
+
+        const storedLocation = readStoredLocation();
+        const urlLocation = {
+            lat: url.searchParams.get('lat'),
+            lng: url.searchParams.get('lng'),
+        };
+        const urlHasLocation = url.searchParams.has('lat') && url.searchParams.has('lng');
+        const urlLocationIsValid = isValidLocation(urlLocation);
+
+        if ((!urlHasLocation || !urlLocationIsValid) && storedLocation) {
+            redirectWithLocation(storedLocation);
+            return;
+        }
+
+        if (urlLocationIsValid) {
+            applyLocationToForm(urlLocation);
+        } else if (storedLocation) {
+            applyLocationToForm(storedLocation);
+        }
+
+        document.querySelectorAll('.wisata-location-trigger').forEach((button) => {
+            button.addEventListener('click', () => {
+                if (!navigator.geolocation) {
+                    button.textContent = 'Browser tidak mendukung lokasi';
+                    return;
+                }
+
+                button.disabled = true;
+                button.textContent = 'Mengambil lokasi...';
+
+                navigator.geolocation.getCurrentPosition((position) => {
+                    redirectWithLocation({
+                        lat: position.coords.latitude.toFixed(7),
+                        lng: position.coords.longitude.toFixed(7),
+                    });
+                }, () => {
+                    button.disabled = false;
+                    button.textContent = 'Aktifkan lokasi untuk melihat jarak destinasi';
+                }, {
+                    enableHighAccuracy: true,
+                    timeout: 10000,
+                    maximumAge: 300000,
+                });
+            });
+        });
+    });
+</script>
+@endpush
