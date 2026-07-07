@@ -34,14 +34,24 @@ class HomeController extends Controller
                     )
                     : null;
             })
-            ->sort(function (Wisata $first, Wisata $second) use ($userLocation) {
+            ->sort(function (Wisata $first, Wisata $second) {
                 $ratingComparison = $second->home_rating_score <=> $first->home_rating_score;
 
                 if ($ratingComparison !== 0) {
                     return $ratingComparison;
                 }
 
-                if ($userLocation !== null && $first->distance_km !== $second->distance_km) {
+                return $first->id <=> $second->id;
+            })
+            ->take(6)
+            ->when($userLocation !== null, function ($items) {
+                return $items->sort(function (Wisata $first, Wisata $second) {
+                    if ($first->distance_km === $second->distance_km) {
+                        $ratingComparison = $second->home_rating_score <=> $first->home_rating_score;
+
+                        return $ratingComparison !== 0 ? $ratingComparison : $first->id <=> $second->id;
+                    }
+
                     if ($first->distance_km === null) {
                         return 1;
                     }
@@ -51,11 +61,8 @@ class HomeController extends Controller
                     }
 
                     return $first->distance_km <=> $second->distance_km;
-                }
-
-                return $first->id <=> $second->id;
+                });
             })
-            ->take(6)
             ->values();
         $totalWisata = Wisata::where('status', 'aktif')->count();
         $totalKategori = KategoriWisata::count();
