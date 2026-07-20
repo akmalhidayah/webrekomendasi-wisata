@@ -15,10 +15,12 @@ class WisataController extends Controller
         $userLocation = $this->validatedUserLocation($request);
 
         $wisata = Wisata::query()
-            ->with([
-                'kategoriWisata',
-                'hotels' => fn ($query) => $query->where('status', 'aktif'),
-            ])
+            ->with('kategoriWisata')
+            ->withMin([
+                'hotels as harga_hotel_termurah' => fn ($query) => $query->where('status', 'aktif'),
+            ], 'harga_min')
+            ->withAvg(['ratingKunjungan as rating_aplikasi' => fn ($query) => $query->where('status', 'approved')], 'rating')
+            ->withCount(['ratingKunjungan as jumlah_rating_aplikasi' => fn ($query) => $query->where('status', 'approved')])
             ->where('status', 'aktif')
             ->when($request->filled('search'), function ($query) use ($request) {
                 $search = '%'.$request->string('search').'%';
@@ -57,13 +59,15 @@ class WisataController extends Controller
             'fotoWisata',
             'hotels' => fn ($query) => $query->where('status', 'aktif'),
             'ratingKunjungan' => fn ($query) => $query
-                ->where('status', 'disetujui')
+                ->where('status', 'approved')
                 ->whereNotNull('ulasan')
                 ->latest()
                 ->limit(5),
         ])
-            ->withAvg(['ratingKunjungan as rata_rata_rating' => fn ($query) => $query->where('status', 'disetujui')], 'rating')
-            ->withCount(['ratingKunjungan as jumlah_rating' => fn ($query) => $query->where('status', 'disetujui')])
+            ->withAvg(['ratingKunjungan as rata_rata_rating' => fn ($query) => $query->where('status', 'approved')], 'rating')
+            ->withCount(['ratingKunjungan as jumlah_rating' => fn ($query) => $query->where('status', 'approved')])
+            ->withAvg(['ratingKunjungan as rating_aplikasi' => fn ($query) => $query->where('status', 'approved')], 'rating')
+            ->withCount(['ratingKunjungan as jumlah_rating_aplikasi' => fn ($query) => $query->where('status', 'approved')])
             ->where('status', 'aktif')
             ->where('slug', $slug)
             ->firstOrFail();

@@ -2,11 +2,10 @@
 
 namespace App\Models;
 
+use App\Support\MediaUrl;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Str;
 
 class FotoWisata extends Model
 {
@@ -23,15 +22,7 @@ class FotoWisata extends Model
 
     public function getFotoUrlAttribute(): ?string
     {
-        if (Str::startsWith($this->path_foto, ['http://', 'https://'])) {
-            return $this->path_foto;
-        }
-
-        if ($this->path_foto && Storage::disk('public')->exists($this->path_foto)) {
-            return '/storage/'.ltrim($this->path_foto, '/');
-        }
-
-        return null;
+        return MediaUrl::fromPublicDisk($this->path_foto);
     }
 
     public function wisata(): BelongsTo

@@ -10,6 +10,8 @@ use Illuminate\Support\Facades\DB;
 
 class CollaborativeFilteringService
 {
+    private float $targetMean = 3.0;
+
     public function generateRecommendations(GuestVisitor $guestVisitor, int $limit = 5): array
     {
         $targetRatings = $this->getTargetRatings($guestVisitor);
@@ -30,6 +32,8 @@ class CollaborativeFilteringService
             'kategoriWisata',
             'hotels' => fn ($query) => $query->where('status', 'aktif'),
         ])
+            ->withAvg(['ratingKunjungan as rating_aplikasi' => fn ($query) => $query->where('status', 'approved')], 'rating')
+            ->withCount(['ratingKunjungan as jumlah_rating_aplikasi' => fn ($query) => $query->where('status', 'approved')])
             ->whereIn('id', $this->getCandidateWisataIds($targetRatings))
             ->get()
             ->keyBy('id');
@@ -159,25 +163,22 @@ class CollaborativeFilteringService
             ->all();
     }
 
-    /**
-     * Cosine similarity dihitung hanya pada wisata yang dinilai oleh kedua guest:
-     * sum(u_i * v_i) / (sqrt(sum(u_i^2)) * sqrt(sum(v_i^2))).
-     */
+    /** Pearson/mean-centered cosine pada item yang sama. */
     public function calculateCosineSimilarity(array $targetRatings, array $otherRatings): float
     {
         $commonWisataIds = array_intersect(array_keys($targetRatings), array_keys($otherRatings));
-
-        if ($commonWisataIds === []) {
+        if (count($commonWisataIds) < max(1, config('recommendation.min_common_items', 3))) {
             return 0.0;
         }
-
+        $targetMean = array_sum(array_map(fn ($id) => $targetRatings[$id], $commonWisataIds)) / count($commonWisataIds);
+        $otherMean = array_sum(array_map(fn ($id) => $otherRatings[$id], $commonWisataIds)) / count($commonWisataIds);
         $dotProduct = 0.0;
         $targetMagnitude = 0.0;
         $otherMagnitude = 0.0;
 
         foreach ($commonWisataIds as $wisataId) {
-            $target = (float) $targetRatings[$wisataId];
-            $other = (float) $otherRatings[$wisataId];
+            $target = (float) $targetRatings[$wisataId] - $targetMean;
+            $other = (float) $otherRatings[$wisataId] - $otherMean;
             $dotProduct += $target * $other;
             $targetMagnitude += $target ** 2;
             $otherMagnitude += $other ** 2;
@@ -185,13 +186,19 @@ class CollaborativeFilteringService
 
         $denominator = sqrt($targetMagnitude) * sqrt($otherMagnitude);
 
-        return $denominator > 0 ? round($dotProduct / $denominator, 4) : 0.0;
+        if ($denominator <= 0) {
+            return 0.0;
+        }
+        $significance = min(count($commonWisataIds) / max(1, config('recommendation.significance_threshold', 5)), 1);
+
+        return round(($dotProduct / $denominator) * $significance, 4);
     }
 
     /** @return array<int, float> */
     public function calculateSimilarities(int $targetGuestId, array $matrix): array
     {
         $targetRatings = $matrix[$targetGuestId] ?? [];
+        $this->targetMean = $targetRatings === [] ? 3.0 : array_sum($targetRatings) / count($targetRatings);
         $similarities = [];
 
         foreach ($matrix as $guestId => $ratings) {
@@ -200,14 +207,14 @@ class CollaborativeFilteringService
             }
 
             $similarity = $this->calculateCosineSimilarity($targetRatings, $ratings);
-            if ($similarity > 0) {
+            if ($similarity >= config('recommendation.min_similarity', 0.2)) {
                 $similarities[(int) $guestId] = $similarity;
             }
         }
 
         arsort($similarities);
 
-        return $similarities;
+        return array_slice($similarities, 0, max(1, config('recommendation.max_neighbors', 30)), true);
     }
 
     /**
@@ -218,7 +225,7 @@ class CollaborativeFilteringService
      */
     public function predictRatingForWisata(int $wisataId, array $similarities, array $matrix): array
     {
-        $weightedRating = 0.0;
+        $weightedDeviation = 0.0;
         $similarityTotal = 0.0;
         $contributingSimilarities = [];
 
@@ -227,7 +234,8 @@ class CollaborativeFilteringService
                 continue;
             }
 
-            $weightedRating += $similarity * $matrix[$guestId][$wisataId];
+            $neighborMean = array_sum($matrix[$guestId]) / count($matrix[$guestId]);
+            $weightedDeviation += $similarity * ($matrix[$guestId][$wisataId] - $neighborMean);
             $similarityTotal += abs($similarity);
             $contributingSimilarities[] = $similarity;
         }
@@ -237,7 +245,7 @@ class CollaborativeFilteringService
         }
 
         return [
-            'nilai_prediksi' => round($weightedRating / $similarityTotal, 4),
+            'nilai_prediksi' => round($this->clamp($this->targetMean + ($weightedDeviation / $similarityTotal), 1, 5), 4),
             'nilai_similarity' => round(max($contributingSimilarities), 4),
         ];
     }
@@ -321,7 +329,9 @@ class CollaborativeFilteringService
             'estimasi_biaya_wisata' => $tourCost,
             'estimasi_biaya_hotel' => $hotelCost,
             'total_estimasi_budget' => $total,
-            'skor_budget' => $this->calculateBudgetScore($guestVisitor, $total),
+            'skor_budget' => $guestVisitor->butuh_hotel && ! $hotel
+                ? 0.0
+                : $this->calculateBudgetScore($guestVisitor, $total),
         ];
     }
 
@@ -341,7 +351,7 @@ class CollaborativeFilteringService
     private function selectBestHotelForBudget(GuestVisitor $guestVisitor, Wisata $wisata, float $tourCost): mixed
     {
         return $wisata->hotels
-            ->filter(fn ($hotel) => $hotel->status === 'aktif')
+            ->filter(fn ($hotel) => $hotel->status === 'aktif' && (float) $hotel->harga_min > 0)
             ->sortByDesc(function ($hotel) use ($guestVisitor, $tourCost) {
                 $hotelCost = (float) $hotel->harga_min * max(1, (int) $guestVisitor->jumlah_malam);
 
@@ -376,7 +386,7 @@ class CollaborativeFilteringService
 
     private function calculateCandidateDistance(GuestVisitor $guestVisitor, Wisata $wisata): ?float
     {
-        if (! $guestVisitor->hasLocation() || ! $wisata->latitude || ! $wisata->longitude) {
+        if (! $guestVisitor->hasLocation() || $wisata->latitude === null || $wisata->longitude === null) {
             return null;
         }
 
@@ -418,6 +428,7 @@ class CollaborativeFilteringService
         foreach ($predictions as &$prediction) {
             if ($prediction['jarak_km'] === null) {
                 $prediction['skor_jarak'] = null;
+
                 continue;
             }
 
@@ -469,11 +480,13 @@ class CollaborativeFilteringService
             $second['skor_budget'],
             $second['skor_cf'],
             $second['skor_rating_destinasi'],
+            -$second['wisata_id'],
         ] <=> [
             $first['skor_akhir'],
             $first['skor_budget'],
             $first['skor_cf'],
             $first['skor_rating_destinasi'],
+            -$first['wisata_id'],
         ]);
     }
 
@@ -524,15 +537,16 @@ class CollaborativeFilteringService
     public function saveRecommendations(GuestVisitor $guestVisitor, array $recommendations): void
     {
         DB::transaction(function () use ($guestVisitor, $recommendations) {
+            GuestVisitor::whereKey($guestVisitor->id)->lockForUpdate()->firstOrFail();
             $guestVisitor->hasilRekomendasi()->delete();
-
-            foreach ($recommendations as $recommendation) {
-                HasilRekomendasi::create([
+            $timestamp = now();
+            HasilRekomendasi::insert(collect($recommendations)->unique('wisata_id')->values()->map(function ($recommendation, $index) use ($guestVisitor, $timestamp) {
+                return [
                     'guest_visitor_id' => $guestVisitor->id,
                     'wisata_id' => $recommendation['wisata_id'],
                     'nilai_prediksi' => round($recommendation['nilai_prediksi'], 4),
                     'nilai_similarity' => round($recommendation['nilai_similarity'], 4),
-                    'ranking' => $recommendation['ranking'],
+                    'ranking' => $index + 1,
                     'metode' => $recommendation['metode'],
                     'hotel_id' => $recommendation['hotel_id'] ?? null,
                     'estimasi_biaya_wisata' => round($recommendation['estimasi_biaya_wisata'] ?? 0, 2),
@@ -546,8 +560,14 @@ class CollaborativeFilteringService
                     'skor_rating_destinasi' => round($recommendation['skor_rating_destinasi'] ?? 0, 4),
                     'skor_akhir' => round($recommendation['skor_akhir'] ?? (($recommendation['nilai_prediksi'] ?? 0) / 5), 4),
                     'alasan_rekomendasi' => $recommendation['alasan_rekomendasi'] ?? [],
-                ]);
-            }
+                    'created_at' => $timestamp,
+                    'updated_at' => $timestamp,
+                ];
+            })->map(function ($row) {
+                $row['alasan_rekomendasi'] = json_encode($row['alasan_rekomendasi']);
+
+                return $row;
+            })->all());
         });
     }
 
@@ -560,6 +580,8 @@ class CollaborativeFilteringService
             'hotels' => fn ($query) => $query->where('status', 'aktif'),
         ])
             ->withAvg('surveyPreferensi', 'rating_awal')
+            ->withAvg(['ratingKunjungan as rating_aplikasi' => fn ($query) => $query->where('status', 'approved')], 'rating')
+            ->withCount(['ratingKunjungan as jumlah_rating_aplikasi' => fn ($query) => $query->where('status', 'approved')])
             ->where('status', 'aktif')
             ->whereNotIn('id', array_keys($targetRatings))
             ->get();

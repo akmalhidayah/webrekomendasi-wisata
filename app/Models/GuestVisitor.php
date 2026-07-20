@@ -45,7 +45,7 @@ class GuestVisitor extends Model
 
     public function hasLocation(): bool
     {
-        return $this->is_location_allowed && $this->user_latitude && $this->user_longitude;
+        return $this->is_location_allowed && $this->user_latitude !== null && $this->user_longitude !== null;
     }
 
     public function surveyPreferensi(): HasMany

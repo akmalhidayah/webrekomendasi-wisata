@@ -2,14 +2,13 @@
 
 namespace App\Models;
 
+use App\Support\MediaUrl;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Str;
 
 class Wisata extends Model
 {
@@ -58,20 +57,21 @@ class Wisata extends Model
         ];
     }
 
+    protected static function booted(): void
+    {
+        static::saving(function (Wisata $wisata) {
+            if ($wisata->isDirty(['rating_maps', 'jumlah_rating_maps'])) {
+                $wisata->rating_maps_updated_at = now();
+            }
+        });
+    }
+
     /**
      * URL relatif membuat foto tetap memakai host dan port aplikasi yang aktif.
      */
     public function getFotoUrlAttribute(): ?string
     {
-        if ($this->foto_utama && Str::startsWith($this->foto_utama, ['http://', 'https://'])) {
-            return $this->foto_utama;
-        }
-
-        if ($this->foto_utama && Storage::disk('public')->exists($this->foto_utama)) {
-            return '/storage/'.ltrim($this->foto_utama, '/');
-        }
-
-        return null;
+        return MediaUrl::fromPublicDisk($this->foto_utama);
     }
 
     public function kategoriWisata(): BelongsTo
@@ -114,7 +114,7 @@ class Wisata extends Model
 
     public function getCoordinateLabelAttribute(): string
     {
-        if ($this->latitude && $this->longitude) {
+        if ($this->latitude !== null && $this->longitude !== null) {
             return $this->latitude.', '.$this->longitude;
         }
 
@@ -123,45 +123,34 @@ class Wisata extends Model
 
     public function getRatingAplikasiRataRataAttribute(): ?float
     {
-        $avg = $this->ratingKunjungan()
-            ->where('status', 'disetujui')
-            ->avg('rating');
+        $avg = $this->attributes['rating_aplikasi'] ?? null;
+        $avg ??= $this->ratingKunjungan()->where('status', 'approved')->avg('rating');
 
         return $avg !== null ? round((float) $avg, 1) : null;
     }
 
     public function getJumlahRatingAplikasiAttribute(): int
     {
-        return (int) $this->ratingKunjungan()
-            ->where('status', 'disetujui')
-            ->count();
+        $count = $this->attributes['jumlah_rating_aplikasi'] ?? null;
+
+        return $count !== null ? (int) $count : $this->ratingKunjungan()->where('status', 'approved')->count();
     }
 
     public function getRatingTampilAttribute(): ?float
     {
-        $ratingMaps = $this->rating_maps !== null ? (float) $this->rating_maps : null;
+        $ratingMaps = $this->rating_maps !== null ? max(0, min(5, (float) $this->rating_maps)) : null;
+        $jumlahRatingMaps = max(0, (int) ($this->jumlah_rating_maps ?? 0));
         $ratingAplikasi = $this->rating_aplikasi_rata_rata;
         $jumlahRatingAplikasi = $this->jumlah_rating_aplikasi;
 
         // Jika ada rating Maps dan rating aplikasi, gabungkan.
         // Rating Maps dianggap sebagai nilai awal/baseline.
-        if ($ratingMaps !== null && $ratingAplikasi !== null && $jumlahRatingAplikasi > 0) {
-            $nilaiGabungan = ($ratingMaps + ($ratingAplikasi * $jumlahRatingAplikasi)) / ($jumlahRatingAplikasi + 1);
-
-            return round($nilaiGabungan, 1);
+        $totalCount = $jumlahRatingMaps + $jumlahRatingAplikasi;
+        if ($totalCount === 0) {
+            return null;
         }
 
-        // Jika belum ada rating aplikasi, tampilkan rating Maps.
-        if ($ratingMaps !== null) {
-            return round($ratingMaps, 1);
-        }
-
-        // Jika tidak ada rating Maps, tampilkan rating aplikasi.
-        if ($ratingAplikasi !== null) {
-            return round($ratingAplikasi, 1);
-        }
-
-        return null;
+        return max(0, min(5, (($ratingMaps ?? 0) * $jumlahRatingMaps + ($ratingAplikasi ?? 0) * $jumlahRatingAplikasi) / $totalCount));
     }
 
     public function getLabelRatingTampilAttribute(): string

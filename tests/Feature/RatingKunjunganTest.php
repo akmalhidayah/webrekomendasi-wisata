@@ -28,7 +28,7 @@ class RatingKunjunganTest extends TestCase
         $this->assertDatabaseHas('rating_kunjungan', [
             'wisata_id' => $wisata->id,
             'rating' => 5,
-            'status' => 'disetujui',
+            'status' => 'approved',
         ]);
         $this->assertDatabaseCount('guest_visitors', 1);
     }
@@ -41,7 +41,7 @@ class RatingKunjunganTest extends TestCase
             ->patch(route('admin.rating-kunjungan.setujui', $rating))
             ->assertSessionHas('success');
 
-        $this->assertSame('disetujui', $rating->fresh()->status);
+        $this->assertSame('approved', $rating->fresh()->status);
         $this->get(route('admin.rating-kunjungan.index'))->assertOk();
         $this->get(route('admin.rating-kunjungan.show', $rating))->assertOk();
         $this->get(route('wisatawan.wisata.show', $rating->wisata->slug))

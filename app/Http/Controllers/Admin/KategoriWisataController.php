@@ -7,6 +7,7 @@ use App\Http\Requests\Admin\StoreKategoriWisataRequest;
 use App\Http\Requests\Admin\UpdateKategoriWisataRequest;
 use App\Models\KategoriWisata;
 use App\Models\LogAktivitas;
+use Illuminate\Database\QueryException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -66,12 +67,16 @@ class KategoriWisataController extends Controller
 
     public function destroy(Request $request, KategoriWisata $kategoriWisata): RedirectResponse
     {
-        if ($kategoriWisata->wisata()->exists()) {
+        if ($kategoriWisata->wisata()->withTrashed()->exists()) {
             return back()->with('error', 'Kategori tidak dapat dihapus karena masih memiliki destinasi wisata.');
         }
 
         $nama = $kategoriWisata->nama_kategori;
-        $kategoriWisata->delete();
+        try {
+            $kategoriWisata->delete();
+        } catch (QueryException) {
+            return back()->with('error', 'Kategori masih digunakan dan tidak dapat dihapus.');
+        }
         $this->log($request, 'Hapus Kategori', "Kategori {$nama} dihapus.");
 
         return redirect()->route('admin.kategori-wisata.index')->with('success', 'Kategori berhasil dihapus.');

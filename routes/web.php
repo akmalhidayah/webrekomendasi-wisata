@@ -22,18 +22,18 @@ Route::get('/wisata', [WisatawanWisataController::class, 'index'])->name('wisata
 Route::get('/wisata/{slug}', [WisatawanWisataController::class, 'show'])->name('wisatawan.wisata.show');
 
 Route::get('/rekomendasi/survey', [SurveyPreferensiController::class, 'index'])->name('wisatawan.survey.index');
-Route::post('/rekomendasi/survey', [SurveyPreferensiController::class, 'store'])->name('wisatawan.survey.store');
+Route::post('/rekomendasi/survey', [SurveyPreferensiController::class, 'store'])->middleware('throttle:survey')->name('wisatawan.survey.store');
 Route::get('/rekomendasi/survey/success', [SurveyPreferensiController::class, 'success'])->name('wisatawan.survey.success');
 Route::get('/rekomendasi', [RekomendasiController::class, 'index'])->name('wisatawan.rekomendasi.index');
-Route::post('/rekomendasi/proses', [RekomendasiController::class, 'proses'])->name('wisatawan.rekomendasi.proses');
+Route::post('/rekomendasi/proses', [RekomendasiController::class, 'proses'])->middleware('throttle:recommendation')->name('wisatawan.rekomendasi.proses');
 Route::get('/rekomendasi/hasil', [RekomendasiController::class, 'hasil'])->name('wisatawan.rekomendasi.hasil');
 Route::delete('/rekomendasi/reset', [RekomendasiController::class, 'reset'])->name('wisatawan.rekomendasi.reset');
-Route::post('/rating-kunjungan', [RatingKunjunganController::class, 'store'])->name('wisatawan.rating-kunjungan.store');
+Route::post('/rating-kunjungan', [RatingKunjunganController::class, 'store'])->middleware('throttle:rating')->name('wisatawan.rating-kunjungan.store');
 
 Route::prefix('admin')->name('admin.')->group(function () {
     Route::middleware('guest')->group(function () {
         Route::get('/login', [AdminAuthController::class, 'showLoginForm'])->name('login');
-        Route::post('/login', [AdminAuthController::class, 'login'])->name('login.process');
+        Route::post('/login', [AdminAuthController::class, 'login'])->middleware('throttle:admin-login')->name('login.process');
     });
 
     Route::middleware(['auth', 'admin'])->group(function () {

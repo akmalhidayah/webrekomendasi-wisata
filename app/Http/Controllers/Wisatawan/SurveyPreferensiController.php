@@ -47,23 +47,27 @@ class SurveyPreferensiController extends Controller
         StoreSurveyPreferensiRequest $request,
         GuestVisitorService $service,
         CollaborativeFilteringService $recommendationService,
-    ): RedirectResponse
-    {
+    ): RedirectResponse {
         $guest = $service->getOrCreateGuestVisitor($request);
         $validated = $request->validated();
 
         DB::transaction(function () use ($request, $guest, $validated) {
-            foreach ($validated['ratings'] as $rating) {
-                SurveyPreferensi::updateOrCreate(
-                    ['guest_visitor_id' => $guest->id, 'wisata_id' => $rating['wisata_id']],
-                    ['rating_awal' => $rating['rating_awal']],
-                );
-            }
+            $guest->surveyPreferensi()->delete();
+            $timestamp = now();
+            SurveyPreferensi::insert(collect($validated['ratings'])->map(fn ($rating) => [
+                'guest_visitor_id' => $guest->id,
+                'wisata_id' => $rating['wisata_id'],
+                'rating_awal' => $rating['rating_awal'],
+                'created_at' => $timestamp,
+                'updated_at' => $timestamp,
+            ])->all());
 
             $locationAllowed = (bool) ($validated['is_location_allowed'] ?? false);
             $hasLocation = $locationAllowed
-                && ! empty($validated['user_latitude'])
-                && ! empty($validated['user_longitude']);
+                && array_key_exists('user_latitude', $validated)
+                && array_key_exists('user_longitude', $validated)
+                && $validated['user_latitude'] !== null
+                && $validated['user_longitude'] !== null;
 
             $guest->update([
                 'budget_min' => $validated['budget_min'],

@@ -155,7 +155,7 @@
                                         <div class="small text-muted">Hotel {{ $formatRupiah($item->estimasi_biaya_hotel) }} &middot; total {{ $formatRupiah($item->total_estimasi_budget) }}</div>
                                     </div>
                                     @if ($item->hotel->traveloka_url)
-                                        <a class="btn btn-sm btn-warning fw-bold" href="{{ $item->hotel->traveloka_url }}" target="_blank" rel="noopener"><i class="bi bi-box-arrow-up-right me-1"></i>Traveloka</a>
+                                        <a class="btn btn-sm btn-warning fw-bold" href="{{ $item->hotel->traveloka_url }}" target="_blank" rel="noopener noreferrer"><i class="bi bi-box-arrow-up-right me-1"></i>Traveloka</a>
                                     @endif
                                 </div>
                             @endif
@@ -196,10 +196,10 @@
                             <div class="recommend-actions">
                                 <a class="btn btn-primary" href="{{ route('wisatawan.wisata.show', $item->wisata->slug) }}"><i class="bi bi-eye me-1"></i>Lihat Detail</a>
                                 @if ($mapsUrl)
-                                    <a class="btn btn-outline-secondary" href="{{ $mapsUrl }}" target="_blank" rel="noopener"><i class="bi bi-map me-1"></i>Buka Maps</a>
+                                    <a class="btn btn-outline-secondary" href="{{ $mapsUrl }}" target="_blank" rel="noopener noreferrer"><i class="bi bi-map me-1"></i>Buka Maps</a>
                                 @endif
                                 @if ($item->hotel?->traveloka_url)
-                                    <a class="btn btn-outline-warning" href="{{ $item->hotel->traveloka_url }}" target="_blank" rel="noopener"><i class="bi bi-building me-1"></i>Traveloka Hotel</a>
+                                    <a class="btn btn-outline-warning" href="{{ $item->hotel->traveloka_url }}" target="_blank" rel="noopener noreferrer"><i class="bi bi-building me-1"></i>Traveloka Hotel</a>
                                 @endif
                             </div>
                         </div>

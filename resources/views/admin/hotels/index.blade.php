@@ -29,7 +29,7 @@
                         <td class="fw-semibold">
                             {{ $hotel->nama_hotel }}
                             @if ($hotel->traveloka_url)
-                                <br><a class="badge text-bg-info text-decoration-none mt-1" href="{{ $hotel->traveloka_url }}" target="_blank" rel="noopener">Traveloka</a>
+                                <br><a class="badge text-bg-info text-decoration-none mt-1" href="{{ $hotel->traveloka_url }}" target="_blank" rel="noopener noreferrer">Traveloka</a>
                             @endif
                         </td>
                         <td>
@@ -54,5 +54,5 @@
         </table>
     </div>
 </div>
-<div class="mt-3">{{ $hotels->links() }}</div>
+<x-admin-pagination :paginator="$hotels" />
 @endsection

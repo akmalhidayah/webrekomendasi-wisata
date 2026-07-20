@@ -63,7 +63,7 @@
                 <div class="form-text">Link Google Maps digunakan untuk tombol buka maps.</div>
             </div>
             <div class="col-12">
-                <a class="btn btn-sm btn-outline-secondary" href="https://www.google.com/maps" target="_blank" rel="noopener">
+                <a class="btn btn-sm btn-outline-secondary" href="https://www.google.com/maps" target="_blank" rel="noopener noreferrer">
                     <i class="bi bi-map me-1"></i>Buka Google Maps
                 </a>
             </div>

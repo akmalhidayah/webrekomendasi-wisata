@@ -27,14 +27,14 @@ class DashboardController extends Controller
             'Rating Kunjungan' => RatingKunjungan::count(),
             'Hasil Rekomendasi' => HasilRekomendasi::count(),
             'Rating Pending' => RatingKunjungan::where('status', 'pending')->count(),
-            'Rating Disetujui' => RatingKunjungan::where('status', 'disetujui')->count(),
+            'Rating Approved' => RatingKunjungan::where('status', 'approved')->count(),
             'Rating Ditolak' => RatingKunjungan::where('status', 'ditolak')->count(),
         ];
 
         $wisataRatingTertinggi = Wisata::query()
-            ->whereHas('ratingKunjungan', fn ($query) => $query->where('status', 'disetujui'))
-            ->withAvg(['ratingKunjungan as rating_disetujui_avg' => fn ($query) => $query->where('status', 'disetujui')], 'rating')
-            ->orderByDesc('rating_disetujui_avg')
+            ->whereHas('ratingKunjungan', fn ($query) => $query->where('status', 'approved'))
+            ->withAvg(['ratingKunjungan as rating_approved_avg' => fn ($query) => $query->where('status', 'approved')], 'rating')
+            ->orderByDesc('rating_approved_avg')
             ->first();
         $wisataPalingDirekomendasikan = Wisata::query()
             ->whereHas('hasilRekomendasi')
@@ -50,9 +50,9 @@ class DashboardController extends Controller
             ->pluck('id');
 
         $topRatingIds = Wisata::query()
-            ->whereHas('ratingKunjungan', fn ($query) => $query->where('status', 'disetujui'))
-            ->withAvg(['ratingKunjungan as rating_disetujui_avg' => fn ($query) => $query->where('status', 'disetujui')], 'rating')
-            ->orderByDesc('rating_disetujui_avg')
+            ->whereHas('ratingKunjungan', fn ($query) => $query->where('status', 'approved'))
+            ->withAvg(['ratingKunjungan as rating_approved_avg' => fn ($query) => $query->where('status', 'approved')], 'rating')
+            ->orderByDesc('rating_approved_avg')
             ->limit(8)
             ->pluck('id');
 
@@ -65,16 +65,16 @@ class DashboardController extends Controller
         $chartPerbandingan = Wisata::query()
             ->whereIn('id', $chartWisataIds)
             ->withCount('hasilRekomendasi')
-            ->withAvg(['ratingKunjungan as rating_disetujui_avg' => fn ($query) => $query->where('status', 'disetujui')], 'rating')
-            ->withCount(['ratingKunjungan as rating_disetujui_count' => fn ($query) => $query->where('status', 'disetujui')])
+            ->withAvg(['ratingKunjungan as rating_approved_avg' => fn ($query) => $query->where('status', 'approved')], 'rating')
+            ->withCount(['ratingKunjungan as rating_approved_count' => fn ($query) => $query->where('status', 'approved')])
             ->get(['id', 'nama_wisata'])
             ->sortByDesc('hasil_rekomendasi_count')
             ->values()
             ->map(fn (Wisata $wisata) => [
                 'nama' => $wisata->nama_wisata,
                 'rekomendasi' => (int) $wisata->hasil_rekomendasi_count,
-                'rating' => $wisata->rating_disetujui_avg !== null ? round((float) $wisata->rating_disetujui_avg, 2) : null,
-                'jumlah_rating' => (int) $wisata->rating_disetujui_count,
+                'rating' => $wisata->rating_approved_avg !== null ? round((float) $wisata->rating_approved_avg, 2) : null,
+                'jumlah_rating' => (int) $wisata->rating_approved_count,
             ]);
 
         $guestTerbaru = GuestVisitor::query()

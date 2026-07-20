@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 800" role="img" aria-labelledby="title description">
+  <title id="title">Foto destinasi belum tersedia</title>
+  <desc id="description">Ilustrasi lanskap sederhana sebagai gambar pengganti destinasi wisata.</desc>
+  <rect width="1200" height="800" fill="#e2e8f0"/>
+  <circle cx="930" cy="190" r="86" fill="#fbbf24"/>
+  <path d="M0 610 290 330l210 210 170-170 530 360v70H0z" fill="#94a3b8"/>
+  <path d="M0 690 350 470l190 150 160-120 500 230v70H0z" fill="#64748b"/>
+  <text x="600" y="745" text-anchor="middle" font-family="sans-serif" font-size="38" fill="#fff">Foto belum tersedia</text>
+</svg>

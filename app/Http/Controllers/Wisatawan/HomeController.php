@@ -18,9 +18,13 @@ class HomeController extends Controller
         $userLocation = $this->validatedUserLocation($request);
 
         $wisata = Wisata::with('kategoriWisata')
-            ->with(['hotels' => fn ($query) => $query->where('status', 'aktif')])
-            ->withAvg(['ratingKunjungan as rata_rata_rating' => fn ($query) => $query->where('status', 'disetujui')], 'rating')
-            ->withCount(['ratingKunjungan as jumlah_rating' => fn ($query) => $query->where('status', 'disetujui')])
+            ->withMin([
+                'hotels as harga_hotel_termurah' => fn ($query) => $query->where('status', 'aktif'),
+            ], 'harga_min')
+            ->withAvg(['ratingKunjungan as rata_rata_rating' => fn ($query) => $query->where('status', 'approved')], 'rating')
+            ->withCount(['ratingKunjungan as jumlah_rating' => fn ($query) => $query->where('status', 'approved')])
+            ->withAvg(['ratingKunjungan as rating_aplikasi' => fn ($query) => $query->where('status', 'approved')], 'rating')
+            ->withCount(['ratingKunjungan as jumlah_rating_aplikasi' => fn ($query) => $query->where('status', 'approved')])
             ->where('status', 'aktif')
             ->get()
             ->each(function (Wisata $item) use ($userLocation) {
@@ -34,7 +38,19 @@ class HomeController extends Controller
                     )
                     : null;
             })
-            ->sort(function (Wisata $first, Wisata $second) {
+            ->sort(function (Wisata $first, Wisata $second) use ($userLocation) {
+                if ($userLocation !== null) {
+                    if ($first->distance_km === null) {
+                        return 1;
+                    }
+                    if ($second->distance_km === null) {
+                        return -1;
+                    }
+                    $distanceComparison = $first->distance_km <=> $second->distance_km;
+                    if ($distanceComparison !== 0) {
+                        return $distanceComparison;
+                    }
+                }
                 $ratingComparison = $second->home_rating_score <=> $first->home_rating_score;
 
                 if ($ratingComparison !== 0) {
@@ -44,25 +60,6 @@ class HomeController extends Controller
                 return $first->id <=> $second->id;
             })
             ->take(6)
-            ->when($userLocation !== null, function ($items) {
-                return $items->sort(function (Wisata $first, Wisata $second) {
-                    if ($first->distance_km === $second->distance_km) {
-                        $ratingComparison = $second->home_rating_score <=> $first->home_rating_score;
-
-                        return $ratingComparison !== 0 ? $ratingComparison : $first->id <=> $second->id;
-                    }
-
-                    if ($first->distance_km === null) {
-                        return 1;
-                    }
-
-                    if ($second->distance_km === null) {
-                        return -1;
-                    }
-
-                    return $first->distance_km <=> $second->distance_km;
-                });
-            })
             ->values();
         $totalWisata = Wisata::where('status', 'aktif')->count();
         $totalKategori = KategoriWisata::count();
@@ -137,16 +134,10 @@ class HomeController extends Controller
         $ratingAplikasi = $wisata->rata_rata_rating !== null ? (float) $wisata->rata_rata_rating : null;
         $jumlahRatingAplikasi = (int) $wisata->jumlah_rating;
 
-        if ($ratingMaps !== null && $ratingAplikasi !== null && $jumlahRatingAplikasi > 0) {
-            return round(($ratingMaps + ($ratingAplikasi * $jumlahRatingAplikasi)) / ($jumlahRatingAplikasi + 1), 1);
-        }
-
-        if ($ratingMaps !== null) {
-            return round($ratingMaps, 1);
-        }
-
-        if ($ratingAplikasi !== null) {
-            return round($ratingAplikasi, 1);
+        $jumlahMaps = max(0, (int) ($wisata->jumlah_rating_maps ?? 0));
+        $total = $jumlahMaps + $jumlahRatingAplikasi;
+        if ($total > 0) {
+            return (($ratingMaps ?? 0) * $jumlahMaps + ($ratingAplikasi ?? 0) * $jumlahRatingAplikasi) / $total;
         }
 
         return 0.0;

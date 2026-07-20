@@ -39,10 +39,10 @@ class RatingKunjunganController extends Controller
 
     public function setujui(Request $request, RatingKunjungan $ratingKunjungan): RedirectResponse
     {
-        $ratingKunjungan->update(['status' => 'disetujui']);
-        $this->log($request, 'Rating Disetujui', "Rating untuk {$ratingKunjungan->wisata->nama_wisata} disetujui.");
+        $ratingKunjungan->update(['status' => 'approved']);
+        $this->log($request, 'Rating Approved', "Rating untuk {$ratingKunjungan->wisata->nama_wisata} approved.");
 
-        return back()->with('success', 'Rating berhasil disetujui.');
+        return back()->with('success', 'Rating berhasil approved.');
     }
 
     public function tolak(Request $request, RatingKunjungan $ratingKunjungan): RedirectResponse

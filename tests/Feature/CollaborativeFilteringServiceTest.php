@@ -21,23 +21,23 @@ class CollaborativeFilteringServiceTest extends TestCase
             [1 => 5, 2 => 4, 3 => 2, 4 => 5],
         );
 
-        $this->assertEqualsWithDelta(0.9908, $similarity, 0.0001);
+        $this->assertEqualsWithDelta(0.5892, $similarity, 0.0001);
         $this->assertSame(0.0, app(CollaborativeFilteringService::class)
             ->calculateCosineSimilarity([1 => 5], [2 => 5]));
     }
 
     public function test_it_generates_and_saves_recommendations_when_surveys_are_sufficient(): void
     {
-        [$first, $second, $third, $fourth] = $this->createWisata(4);
+        [$first, $second, $third, $fourth, $fifth] = $this->createWisata(5);
         $target = $this->createGuest('TARGET');
         $neighbor = $this->createGuest('NEIGHBOR');
-        $this->rate($target, [$first->id => 5, $second->id => 4]);
-        $this->rate($neighbor, [$first->id => 5, $second->id => 4, $third->id => 5, $fourth->id => 2]);
+        $this->rate($target, [$first->id => 5, $second->id => 4, $third->id => 3]);
+        $this->rate($neighbor, [$first->id => 5, $second->id => 4, $third->id => 3, $fourth->id => 5, $fifth->id => 2]);
 
         $recommendations = app(CollaborativeFilteringService::class)->generateRecommendations($target, 2);
 
         $this->assertCount(2, $recommendations);
-        $this->assertSame($third->id, $recommendations[0]['wisata_id']);
+        $this->assertSame($fourth->id, $recommendations[0]['wisata_id']);
         $this->assertSame('Hybrid Collaborative Filtering', $recommendations[0]['metode']);
         $this->assertDatabaseCount('hasil_rekomendasi', 2);
     }

@@ -563,7 +563,7 @@
 
 @section('content')
 @php
-    $ulasanDisetujui = $wisata->ratingKunjungan->where('status', 'disetujui');
+    $ulasanApproved = $wisata->ratingKunjungan->where('status', 'approved');
     $galleryPhotos = $wisata->fotoWisata->filter(fn ($foto) => $foto->foto_url)->values();
     $relatedHotels = $wisata->hotels->take(3)->values();
     $lowestHotelPrice = $relatedHotels->min(fn ($hotel) => (float) $hotel->harga_min);
@@ -656,8 +656,8 @@
                             <a
                                 class="btn btn-outline-secondary"
                                 href="{{ $mapsUrl }}"
-                                target="_blank"
-                                rel="noopener"
+                                target="_blank" rel="noopener noreferrer"
+                                rel="noopener noreferrer"
                             >
                                 <i class="bi bi-map"></i>
                                 Buka Maps
@@ -715,7 +715,7 @@
                         <a
                             class="hotel-media-link"
                             href="{{ $hotelTargetUrl ?: '#' }}"
-                            @if ($hotelTargetUrl) target="_blank" rel="noopener" @endif
+                            @if ($hotelTargetUrl) target="_blank" rel="noopener noreferrer" @endif
                             aria-label="Buka {{ $hotel->nama_hotel }}"
                         >
                             @if ($hotel->gambar_url)
@@ -762,14 +762,14 @@
 
                             <div class="hotel-actions">
                                 @if ($hotel->traveloka_url)
-                                    <a class="btn btn-primary" href="{{ $hotel->traveloka_url }}" target="_blank" rel="noopener">
+                                    <a class="btn btn-primary" href="{{ $hotel->traveloka_url }}" target="_blank" rel="noopener noreferrer">
                                         <i class="bi bi-box-arrow-up-right me-1"></i>
                                         Traveloka
                                     </a>
                                 @endif
 
                                 @if ($hotel->maps_url)
-                                    <a class="btn btn-outline-secondary" href="{{ $hotel->maps_url }}" target="_blank" rel="noopener">
+                                    <a class="btn btn-outline-secondary" href="{{ $hotel->maps_url }}" target="_blank" rel="noopener noreferrer">
                                         <i class="bi bi-map me-1"></i>
                                         Maps
                                     </a>
@@ -857,7 +857,7 @@
         </h2>
 
         <div class="row g-3">
-            @forelse ($ulasanDisetujui as $item)
+            @forelse ($ulasanApproved as $item)
                 <div class="col-md-6">
                     <article class="review-card">
                         <div class="review-stars">

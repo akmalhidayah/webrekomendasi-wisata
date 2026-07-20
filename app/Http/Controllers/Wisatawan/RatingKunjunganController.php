@@ -19,19 +19,17 @@ class RatingKunjunganController extends Controller
         }
 
         $guest = $guestService->getOrCreateGuestVisitor($request);
-        $rating = RatingKunjungan::create([
-            ...$request->safe()->only(['wisata_id', 'rating', 'ulasan']),
-            'guest_visitor_id' => $guest->id,
-            'pernah_dikunjungi' => true,
-            'status' => 'disetujui',
-        ]);
+        $rating = RatingKunjungan::updateOrCreate(
+            ['guest_visitor_id' => $guest->id, 'wisata_id' => $request->integer('wisata_id')],
+            [...$request->safe()->only(['rating', 'ulasan']), 'pernah_dikunjungi' => true, 'status' => 'approved'],
+        );
 
         event(new RatingKunjunganBaru($rating));
 
         LogAktivitas::create([
             'guest_visitor_id' => $guest->id,
             'aktivitas' => 'Rating Kunjungan Baru',
-            'deskripsi' => 'Pengunjung mengirim rating kunjungan dan otomatis disetujui.',
+            'deskripsi' => 'Pengunjung mengirim rating kunjungan dan otomatis approved.',
             'ip_address' => $request->ip(),
         ]);
 

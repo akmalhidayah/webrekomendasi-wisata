@@ -32,6 +32,46 @@ class AdminWisataTest extends TestCase
         $this->get(route('admin.dashboard'))->assertOk()->assertSee('Dashboard');
     }
 
+    public function test_admin_wisata_uses_bootstrap_pagination_with_query_and_summary(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+        $kategori = KategoriWisata::create([
+            'nama_kategori' => 'Kategori Pagination',
+            'slug' => 'kategori-pagination',
+        ]);
+
+        foreach (range(1, 11) as $number) {
+            Wisata::create([
+                'kategori_wisata_id' => $kategori->id,
+                'nama_wisata' => "Pagination Makassar {$number}",
+                'slug' => "pagination-makassar-{$number}",
+                'jenis_wisata' => 'Pantai',
+                'alamat' => 'Makassar',
+                'status' => 'aktif',
+            ]);
+        }
+
+        $this->actingAs($admin)
+            ->get(route('admin.wisata.index', ['search' => 'Pagination Makassar']))
+            ->assertOk()
+            ->assertSee('<ul class="pagination">', false)
+            ->assertSee('search=Pagination%20Makassar', false)
+            ->assertSee('page=2', false)
+            ->assertSee('Menampilkan 1–10 dari 11 data')
+            ->assertDontSee('relative inline-flex', false);
+    }
+
+    public function test_admin_pagination_does_not_render_empty_navigation_for_one_page(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+
+        $this->actingAs($admin)
+            ->get(route('admin.wisata.index'))
+            ->assertOk()
+            ->assertSee('Tidak ada data')
+            ->assertDontSee('<ul class="pagination">', false);
+    }
+
     public function test_admin_can_create_wisata_with_coordinates_and_related_hotels(): void
     {
         $this->seed();

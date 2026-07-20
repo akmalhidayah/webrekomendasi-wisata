@@ -273,26 +273,23 @@
         </div>
     @endunless
 
+    @if ($hasUserLocation)
+        <div class="d-flex justify-content-end mb-3">
+            <button class="btn btn-sm btn-outline-secondary rounded-pill" type="button" data-location-clear>Hapus lokasi</button>
+        </div>
+    @endif
+
     <div class="row g-4">
         @forelse ($wisata as $item)
             @php
-                $lowestHotelPrice = $item->hotels->min(fn ($hotel) => (float) $hotel->harga_min);
+                $lowestHotelPrice = $item->harga_hotel_termurah !== null ? (float) $item->harga_hotel_termurah : null;
                 $packageStart = $lowestHotelPrice !== null ? (float) $item->total_estimasi_biaya + $lowestHotelPrice : null;
             @endphp
 
             <div class="col-md-6 col-xl-4">
                 <article class="wisata-card">
                     <div class="wisata-card-media">
-                        @if($item->foto_url)
-                            <img class="wisata-card-img" src="{{ $item->foto_url }}" alt="{{ $item->nama_wisata }}" loading="lazy">
-                        @else
-                            <div class="wisata-card-empty">
-                                <div class="text-center">
-                                    <i class="bi bi-image fs-2"></i>
-                                    <div class="small mt-1">Foto belum tersedia</div>
-                                </div>
-                            </div>
-                        @endif
+                        <img class="wisata-card-img" src="{{ $item->foto_url ?? asset('images/default-wisata.svg') }}" alt="{{ $item->nama_wisata }}" loading="{{ $loop->first ? 'eager' : 'lazy' }}" @if($loop->first) fetchpriority="high" @endif onerror="this.onerror=null;this.src='{{ asset('images/default-wisata.svg') }}';">
 
                         <span class="category-float">
                             <i class="bi bi-tag-fill"></i>
@@ -365,110 +362,12 @@
         @endforelse
     </div>
 
-    <div class="wisata-pagination">{{ $wisata->withQueryString()->links('pagination::bootstrap-5') }}</div>
+    @if ($wisata->hasPages())
+        <div class="wisata-pagination">{{ $wisata->onEachSide(1)->withQueryString()->links('pagination::bootstrap-5') }}</div>
+    @endif
 </div>
 @endsection
 
 @push('scripts')
-<script>
-    document.addEventListener('DOMContentLoaded', () => {
-        const storageKey = 'wisataUserLocation';
-        const latInput = document.getElementById('wisataFilterLat');
-        const lngInput = document.getElementById('wisataFilterLng');
-        const url = new URL(window.location.href);
-
-        const isValidLocation = (location) => {
-            if (!location) {
-                return false;
-            }
-
-            const lat = Number(location.lat);
-            const lng = Number(location.lng);
-
-            return Number.isFinite(lat)
-                && Number.isFinite(lng)
-                && lat >= -90
-                && lat <= 90
-                && lng >= -180
-                && lng <= 180;
-        };
-
-        const readStoredLocation = () => {
-            try {
-                const location = JSON.parse(localStorage.getItem(storageKey) || 'null');
-
-                return isValidLocation(location) ? location : null;
-            } catch (error) {
-                localStorage.removeItem(storageKey);
-
-                return null;
-            }
-        };
-
-        const applyLocationToForm = (location) => {
-            if (!latInput || !lngInput || !isValidLocation(location)) {
-                return;
-            }
-
-            latInput.value = location.lat;
-            lngInput.value = location.lng;
-        };
-
-        const redirectWithLocation = (location) => {
-            if (!isValidLocation(location)) {
-                return;
-            }
-
-            localStorage.setItem(storageKey, JSON.stringify(location));
-            url.searchParams.set('lat', location.lat);
-            url.searchParams.set('lng', location.lng);
-            window.location.href = url.toString();
-        };
-
-        const storedLocation = readStoredLocation();
-        const urlLocation = {
-            lat: url.searchParams.get('lat'),
-            lng: url.searchParams.get('lng'),
-        };
-        const urlHasLocation = url.searchParams.has('lat') && url.searchParams.has('lng');
-        const urlLocationIsValid = isValidLocation(urlLocation);
-
-        if ((!urlHasLocation || !urlLocationIsValid) && storedLocation) {
-            redirectWithLocation(storedLocation);
-            return;
-        }
-
-        if (urlLocationIsValid) {
-            applyLocationToForm(urlLocation);
-        } else if (storedLocation) {
-            applyLocationToForm(storedLocation);
-        }
-
-        document.querySelectorAll('.wisata-location-trigger').forEach((button) => {
-            button.addEventListener('click', () => {
-                if (!navigator.geolocation) {
-                    button.textContent = 'Browser tidak mendukung lokasi';
-                    return;
-                }
-
-                button.disabled = true;
-                button.textContent = 'Mengambil lokasi...';
-
-                navigator.geolocation.getCurrentPosition((position) => {
-                    redirectWithLocation({
-                        lat: position.coords.latitude.toFixed(7),
-                        lng: position.coords.longitude.toFixed(7),
-                    });
-                }, () => {
-                    button.disabled = false;
-                    button.textContent = 'Aktifkan lokasi untuk melihat jarak destinasi';
-                }, {
-                    enableHighAccuracy: true,
-                    timeout: 10000,
-                    maximumAge: 300000,
-                });
-            });
-        });
-    });
-</script>
+@vite('resources/js/location-manager.js')
 @endpush

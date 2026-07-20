@@ -32,7 +32,7 @@
                     <dt class="col-sm-4">Alamat</dt><dd class="col-sm-8">{{ $wisata->alamat }}</dd>
                     <dt class="col-sm-4">Jam operasional</dt><dd class="col-sm-8">{{ $wisata->jam_operasional ?: '-' }}</dd>
                     <dt class="col-sm-4">Status</dt><dd class="col-sm-8">{{ ucfirst($wisata->status) }}</dd>
-                    <dt class="col-sm-4">Google Maps</dt><dd class="col-sm-8">@if ($mapsUrl)<a href="{{ $mapsUrl }}" target="_blank" rel="noopener">Buka lokasi</a>@else-@endif</dd>
+                    <dt class="col-sm-4">Google Maps</dt><dd class="col-sm-8">@if ($mapsUrl)<a href="{{ $mapsUrl }}" target="_blank" rel="noopener noreferrer">Buka lokasi</a>@else-@endif</dd>
                 </dl>
             </div>
         </div>
@@ -62,7 +62,7 @@
                     <dt class="col-sm-4">Latitude</dt><dd class="col-sm-8">{{ $wisata->latitude ?: '-' }}</dd>
                     <dt class="col-sm-4">Longitude</dt><dd class="col-sm-8">{{ $wisata->longitude ?: '-' }}</dd>
                     <dt class="col-sm-4">Koordinat</dt><dd class="col-sm-8">{{ $wisata->coordinate_label }}</dd>
-                    <dt class="col-sm-4">Maps URL</dt><dd class="col-sm-8">@if ($mapsUrl)<a href="{{ $mapsUrl }}" target="_blank" rel="noopener">Buka Maps</a>@else-@endif</dd>
+                    <dt class="col-sm-4">Maps URL</dt><dd class="col-sm-8">@if ($mapsUrl)<a href="{{ $mapsUrl }}" target="_blank" rel="noopener noreferrer">Buka Maps</a>@else-@endif</dd>
                 </dl>
             </div>
         </div>
@@ -83,7 +83,7 @@
                         </div>
                         <div class="text-end">
                             @if ($hotel->traveloka_url)
-                                <a class="btn btn-sm btn-outline-info mb-1" href="{{ $hotel->traveloka_url }}" target="_blank" rel="noopener">Traveloka</a>
+                                <a class="btn btn-sm btn-outline-info mb-1" href="{{ $hotel->traveloka_url }}" target="_blank" rel="noopener noreferrer">Traveloka</a>
                             @endif
                             <a class="btn btn-sm btn-outline-primary" href="{{ route('admin.hotels.show', $hotel) }}">Detail</a>
                         </div>

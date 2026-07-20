@@ -11,9 +11,11 @@ use App\Models\LogAktivitas;
 use App\Models\Wisata;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\View\View;
+use Throwable;
 
 class WisataController extends Controller
 {
@@ -53,13 +55,24 @@ class WisataController extends Controller
         $this->syncMapsUrl($data);
         $this->setCalculatedCosts($data);
 
-        if ($request->hasFile('foto_utama')) {
-            $data['foto_utama'] = $request->file('foto_utama')->store('wisata', 'public');
+        $newPath = $request->hasFile('foto_utama') ? $request->file('foto_utama')->store('wisata', 'public') : null;
+        if ($newPath) {
+            $data['foto_utama'] = $newPath;
         }
+        try {
+            $wisata = DB::transaction(function () use ($data, $request) {
+                $wisata = Wisata::create($data);
+                $this->syncHotels($wisata, $request->validated('hotel_terkait', []));
+                $this->log($request, 'Tambah Wisata', "Destinasi {$wisata->nama_wisata} ditambahkan.");
 
-        $wisata = Wisata::create($data);
-        $this->syncHotels($wisata, $request->validated('hotel_terkait', []));
-        $this->log($request, 'Tambah Wisata', "Destinasi {$wisata->nama_wisata} ditambahkan.");
+                return $wisata;
+            });
+        } catch (Throwable $exception) {
+            if ($newPath) {
+                Storage::disk('public')->delete($newPath);
+            }
+            throw $exception;
+        }
 
         return redirect()->route('admin.wisata.show', $wisata)->with('success', 'Destinasi wisata berhasil ditambahkan.');
     }
@@ -87,18 +100,26 @@ class WisataController extends Controller
         $this->syncMapsUrl($data);
         $this->setCalculatedCosts($data);
 
-        if ($request->hasFile('foto_utama')) {
-            $oldPath = $wisata->foto_utama;
-            $data['foto_utama'] = $request->file('foto_utama')->store('wisata', 'public');
-
-            if ($oldPath && ! $wisata->fotoWisata()->where('path_foto', $oldPath)->exists()) {
-                Storage::disk('public')->delete($oldPath);
-            }
+        $oldPath = $wisata->foto_utama;
+        $newPath = $request->hasFile('foto_utama') ? $request->file('foto_utama')->store('wisata', 'public') : null;
+        if ($newPath) {
+            $data['foto_utama'] = $newPath;
         }
-
-        $wisata->update($data);
-        $this->syncHotels($wisata, $request->validated('hotel_terkait', []));
-        $this->log($request, 'Ubah Wisata', "Destinasi {$wisata->nama_wisata} diperbarui.");
+        try {
+            DB::transaction(function () use ($wisata, $data, $request) {
+                $wisata->update($data);
+                $this->syncHotels($wisata, $request->validated('hotel_terkait', []));
+                $this->log($request, 'Ubah Wisata', "Destinasi {$wisata->nama_wisata} diperbarui.");
+            });
+        } catch (Throwable $exception) {
+            if ($newPath) {
+                Storage::disk('public')->delete($newPath);
+            }
+            throw $exception;
+        }
+        if ($newPath && $oldPath && ! $wisata->fotoWisata()->where('path_foto', $oldPath)->exists()) {
+            Storage::disk('public')->delete($oldPath);
+        }
 
         return redirect()->route('admin.wisata.show', $wisata)->with('success', 'Destinasi wisata berhasil diperbarui.');
     }

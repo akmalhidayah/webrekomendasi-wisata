@@ -8,6 +8,7 @@ use App\Models\LogAktivitas;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\View\View;
 
 class AuthController extends Controller
@@ -36,6 +37,7 @@ class AuthController extends Controller
         }
 
         $request->session()->regenerate();
+        RateLimiter::clear(strtolower(trim((string) $request->input('email'))).'|'.$request->ip());
 
         LogAktivitas::create([
             'user_id' => $request->user()->id,

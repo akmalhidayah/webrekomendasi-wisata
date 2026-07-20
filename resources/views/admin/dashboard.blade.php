@@ -189,7 +189,7 @@
         'Hasil Rekomendasi' => 'bi-stars',
         'Rating Kunjungan' => 'bi-chat-square-heart',
         'Rating Pending' => 'bi-hourglass',
-        'Rating Disetujui' => 'bi-check-circle',
+        'Rating Approved' => 'bi-check-circle',
         'Rating Ditolak' => 'bi-x-circle',
         'Fasilitas' => 'bi-building',
         'Foto Wisata' => 'bi-images',
@@ -248,7 +248,7 @@
                 <div class="summary-value">{{ $wisataRatingTertinggi->nama_wisata }}</div>
                 <div class="small text-muted mt-1">
                     <i class="bi bi-star-fill text-warning"></i>
-                    {{ number_format($wisataRatingTertinggi->rating_disetujui_avg, 2) }}/5
+                    {{ number_format($wisataRatingTertinggi->rating_approved_avg, 2) }}/5
                 </div>
             @else
                 <div class="text-muted small">Belum ada data</div>

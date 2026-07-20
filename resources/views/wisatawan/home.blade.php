@@ -907,30 +907,28 @@
         <a class="btn btn-outline-primary btn-modern" href="{{ route('wisatawan.wisata.index', $userLocation ?? []) }}">
             Lihat semua <i class="bi bi-arrow-right ms-1"></i>
         </a>
+        @if ($userLocation !== null)
+            <button class="btn btn-outline-secondary btn-modern" type="button" data-location-clear>Hapus lokasi</button>
+        @endif
     </div>
 
     <div class="row g-4">
         @foreach ($wisata as $index => $item)
             @php
-                $lowestHotelPrice = $item->hotels->min(fn ($hotel) => (float) $hotel->harga_min);
+                $lowestHotelPrice = $item->harga_hotel_termurah !== null ? (float) $item->harga_hotel_termurah : null;
                 $packageStart = $lowestHotelPrice !== null ? (float) $item->total_estimasi_biaya + $lowestHotelPrice : null;
             @endphp
             <div class="col-md-6 col-xl-4 reveal" style="transition-delay: {{ ($index % 3) * 90 }}ms">
                 <article class="card modern-card home-destination-card h-100">
                     <div class="destination-media overflow-hidden">
-                        @if ($item->foto_url)
-                            <img
-                                class="destination-img image-zoom"
-                                src="{{ $item->foto_url }}"
-                                alt="{{ $item->nama_wisata }}"
-                                loading="lazy"
-                            >
-                        @else
-                            <div class="destination-img bg-secondary-subtle d-flex flex-column align-items-center justify-content-center text-muted">
-                                <i class="bi bi-image fs-2 mb-2"></i>
-                                <small>Foto belum tersedia</small>
-                            </div>
-                        @endif
+                        <img
+                            class="destination-img image-zoom"
+                            src="{{ $item->foto_url ?? asset('images/default-wisata.svg') }}"
+                            alt="{{ $item->nama_wisata }}"
+                            loading="{{ $loop->first ? 'eager' : 'lazy' }}"
+                            @if($loop->first) fetchpriority="high" @endif
+                            onerror="this.onerror=null;this.src='{{ asset('images/default-wisata.svg') }}';"
+                        >
 
                         <span class="home-rank-badge">
                             <i class="bi bi-trophy-fill text-warning"></i>
@@ -1043,8 +1041,8 @@
                     <a
                         class="btn btn-outline-primary btn-modern mt-4"
                         href="https://makassarkota.go.id/sejarah-kota-makassar/"
-                        target="_blank"
-                        rel="noopener"
+                        target="_blank" rel="noopener noreferrer"
+                        rel="noopener noreferrer"
                     >
                         Baca sejarah lengkap <i class="bi bi-arrow-up-right ms-1"></i>
                     </a>
@@ -1161,6 +1159,7 @@
 @endsection
 
 @push('scripts')
+@vite('resources/js/location-manager.js')
 <script>
     document.addEventListener('DOMContentLoaded', () => {
         document.querySelectorAll('.js-count-up').forEach((counter) => {
@@ -1180,89 +1179,6 @@
             };
 
             requestAnimationFrame(tick);
-        });
-
-        const storageKey = 'wisataUserLocation';
-        const url = new URL(window.location.href);
-
-        const isValidLocation = (location) => {
-            if (!location) {
-                return false;
-            }
-
-            const lat = Number(location.lat);
-            const lng = Number(location.lng);
-
-            return Number.isFinite(lat)
-                && Number.isFinite(lng)
-                && lat >= -90
-                && lat <= 90
-                && lng >= -180
-                && lng <= 180;
-        };
-
-        const readStoredLocation = () => {
-            try {
-                const location = JSON.parse(localStorage.getItem(storageKey) || 'null');
-
-                return isValidLocation(location) ? location : null;
-            } catch (error) {
-                localStorage.removeItem(storageKey);
-
-                return null;
-            }
-        };
-
-        const redirectWithLocation = (location) => {
-            if (!isValidLocation(location)) {
-                return;
-            }
-
-            localStorage.setItem(storageKey, JSON.stringify(location));
-            url.searchParams.set('lat', location.lat);
-            url.searchParams.set('lng', location.lng);
-            window.location.href = url.toString();
-        };
-
-        const storedLocation = readStoredLocation();
-        const urlLocation = {
-            lat: url.searchParams.get('lat'),
-            lng: url.searchParams.get('lng'),
-        };
-        const urlHasLocation = url.searchParams.has('lat') && url.searchParams.has('lng');
-        const urlLocationIsValid = isValidLocation(urlLocation);
-
-        if (urlLocationIsValid) {
-            localStorage.setItem(storageKey, JSON.stringify(urlLocation));
-        } else if ((!urlHasLocation || !urlLocationIsValid) && storedLocation) {
-            redirectWithLocation(storedLocation);
-            return;
-        }
-
-        document.querySelectorAll('.js-home-location').forEach((button) => {
-            button.addEventListener('click', () => {
-                if (!navigator.geolocation) {
-                    button.innerHTML = '<i class="bi bi-exclamation-circle"></i> Browser tidak mendukung lokasi';
-                    return;
-                }
-
-                button.disabled = true;
-                button.innerHTML = '<i class="bi bi-hourglass-split"></i> Mengambil lokasi...';
-
-                navigator.geolocation.getCurrentPosition((position) => {
-                    redirectWithLocation({
-                        lat: position.coords.latitude.toFixed(7),
-                        lng: position.coords.longitude.toFixed(7),
-                    });
-                }, () => {
-                    button.disabled = false;
-                    button.innerHTML = '<i class="bi bi-crosshair"></i> Aktifkan lokasi';
-                }, {
-                    enableHighAccuracy: true,
-                    timeout: 10000,
-                    maximumAge: 300000,
-                });
-            });
         });
 
         document.querySelectorAll('a[href^="#"]').forEach((link) => {

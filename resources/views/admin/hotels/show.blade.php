@@ -27,8 +27,8 @@
                     <dt class="col-sm-4">Alamat</dt><dd class="col-sm-8">{{ $hotel->alamat ?: '-' }}</dd>
                     <dt class="col-sm-4">Harga</dt><dd class="col-sm-8">@if ((float) $hotel->harga_max > (float) $hotel->harga_min) Rp {{ number_format($hotel->harga_min, 0, ',', '.') }} - Rp {{ number_format($hotel->harga_max, 0, ',', '.') }} @else Mulai Rp {{ number_format($hotel->harga_min, 0, ',', '.') }} @endif</dd>
                     <dt class="col-sm-4">Rating</dt><dd class="col-sm-8">{{ $hotel->rating_hotel ? number_format((float) $hotel->rating_hotel, 1, ',', '.') : '-' }}</dd>
-                    <dt class="col-sm-4">Traveloka</dt><dd class="col-sm-8">@if ($hotel->traveloka_url)<a href="{{ $hotel->traveloka_url }}" target="_blank" rel="noopener">Buka Traveloka</a>@else-@endif</dd>
-                    <dt class="col-sm-4">Google Maps</dt><dd class="col-sm-8">@if ($hotel->maps_url)<a href="{{ $hotel->maps_url }}" target="_blank" rel="noopener">Buka Maps</a>@else-@endif</dd>
+                    <dt class="col-sm-4">Traveloka</dt><dd class="col-sm-8">@if ($hotel->traveloka_url)<a href="{{ $hotel->traveloka_url }}" target="_blank" rel="noopener noreferrer">Buka Traveloka</a>@else-@endif</dd>
+                    <dt class="col-sm-4">Google Maps</dt><dd class="col-sm-8">@if ($hotel->maps_url)<a href="{{ $hotel->maps_url }}" target="_blank" rel="noopener noreferrer">Buka Maps</a>@else-@endif</dd>
                 </dl>
             </div>
         </div>

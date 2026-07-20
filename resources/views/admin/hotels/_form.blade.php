@@ -67,7 +67,7 @@
                         <input type="url" class="form-control" name="maps_url" value="{{ old('maps_url', $hotel->maps_url ?? '') }}">
                     </div>
                     <div class="col-12">
-                        <a class="btn btn-sm btn-outline-secondary" href="https://www.google.com/maps" target="_blank" rel="noopener">
+                        <a class="btn btn-sm btn-outline-secondary" href="https://www.google.com/maps" target="_blank" rel="noopener noreferrer">
                             <i class="bi bi-map me-1"></i>Buka Google Maps
                         </a>
                     </div>

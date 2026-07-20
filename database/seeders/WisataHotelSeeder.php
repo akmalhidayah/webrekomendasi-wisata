@@ -44,6 +44,7 @@ class WisataHotelSeeder extends Seeder
 
             if (! $wisata) {
                 $this->command?->warn("Wisata tidak ditemukan: {$wisataName}");
+
                 continue;
             }
 
@@ -54,6 +55,7 @@ class WisataHotelSeeder extends Seeder
 
                 if (! $hotel) {
                     $this->command?->warn("Hotel tidak ditemukan: {$hotelName}");
+
                     continue;
                 }
 

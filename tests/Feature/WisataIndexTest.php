@@ -57,4 +57,84 @@ class WisataIndexTest extends TestCase
             ->assertSee('lng=119.4', false)
             ->assertSee('page=2', false);
     }
+
+    public function test_invalid_coordinates_are_ignored_and_zero_coordinates_are_valid(): void
+    {
+        $this->seed();
+
+        $this->get('/wisata?lat=invalid&lng=119.4')
+            ->assertOk()
+            ->assertSee('Aktifkan lokasi untuk melihat jarak destinasi');
+
+        $response = $this->get('/wisata?lat=0&lng=0');
+        $response->assertOk()->assertSee('Hapus lokasi');
+        $this->assertSame(['lat' => 0.0, 'lng' => 0.0], $response->viewData('userLocation'));
+    }
+
+    public function test_filters_and_pagination_keep_valid_location_query(): void
+    {
+        $kategori = KategoriWisata::create([
+            'nama_kategori' => 'Pantai Test',
+            'slug' => 'pantai-test',
+        ]);
+
+        foreach (range(1, 13) as $number) {
+            Wisata::create([
+                'kategori_wisata_id' => $kategori->id,
+                'nama_wisata' => "Tujuan Filter {$number}",
+                'slug' => "tujuan-filter-{$number}",
+                'jenis_wisata' => 'Pantai',
+                'alamat' => 'Makassar',
+                'latitude' => 0,
+                'longitude' => 0,
+                'status' => 'aktif',
+            ]);
+        }
+
+        $response = $this->get(route('wisatawan.wisata.index', [
+            'search' => 'Tujuan Filter',
+            'kategori' => $kategori->id,
+            'lat' => 0,
+            'lng' => 0,
+        ]));
+
+        $response->assertOk()
+            ->assertSee('page=2', false)
+            ->assertSee('search=Tujuan%20Filter', false)
+            ->assertSee('kategori='.$kategori->id, false)
+            ->assertSee('lat=0', false)
+            ->assertSee('lng=0', false);
+
+        $paginator = $response->viewData('wisata');
+        $this->assertFalse($paginator->first()->relationLoaded('hotels'));
+        $this->assertArrayHasKey('harga_hotel_termurah', $paginator->first()->getAttributes());
+    }
+
+    public function test_location_script_is_guarded_and_missing_photo_has_fallback(): void
+    {
+        $kategori = KategoriWisata::create([
+            'nama_kategori' => 'Tanpa Foto',
+            'slug' => 'tanpa-foto',
+        ]);
+        Wisata::create([
+            'kategori_wisata_id' => $kategori->id,
+            'nama_wisata' => 'Wisata Tanpa Foto',
+            'slug' => 'wisata-tanpa-foto',
+            'jenis_wisata' => 'Museum',
+            'alamat' => 'Makassar',
+            'status' => 'aktif',
+        ]);
+
+        $this->get('/wisata')
+            ->assertOk()
+            ->assertSee('images/default-wisata.svg', false)
+            ->assertSee('location-manager', false);
+
+        $legacyViewScript = file_get_contents(resource_path('views/wisatawan/wisata/index.blade.php'));
+        $locationManager = file_get_contents(resource_path('js/location-manager.js'));
+        $this->assertStringNotContainsString('window.location.href', $legacyViewScript);
+        $this->assertStringNotContainsString('location.reload()', $legacyViewScript);
+        $this->assertStringContainsString('LOCATION_REDIRECT_GUARD_KEY', $locationManager);
+        $this->assertStringContainsString('window.location.replace', $locationManager);
+    }
 }

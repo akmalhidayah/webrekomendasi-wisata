@@ -9,9 +9,11 @@ use App\Models\Hotel;
 use App\Models\LogAktivitas;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\View\View;
+use Throwable;
 
 class HotelController extends Controller
 {
@@ -42,12 +44,23 @@ class HotelController extends Controller
         $data = $request->safe()->except('gambar');
         $data['slug'] = $this->uniqueSlug($data['nama_hotel']);
 
-        if ($request->hasFile('gambar')) {
-            $data['gambar'] = $request->file('gambar')->store('hotels', 'public');
+        $newPath = $request->hasFile('gambar') ? $request->file('gambar')->store('hotels', 'public') : null;
+        if ($newPath) {
+            $data['gambar'] = $newPath;
         }
+        try {
+            $hotel = DB::transaction(function () use ($data, $request) {
+                $hotel = Hotel::create($data);
+                $this->log($request, 'Tambah Hotel', "Hotel {$hotel->nama_hotel} ditambahkan.");
 
-        $hotel = Hotel::create($data);
-        $this->log($request, 'Tambah Hotel', "Hotel {$hotel->nama_hotel} ditambahkan.");
+                return $hotel;
+            });
+        } catch (Throwable $exception) {
+            if ($newPath) {
+                Storage::disk('public')->delete($newPath);
+            }
+            throw $exception;
+        }
 
         return redirect()->route('admin.hotels.show', $hotel)->with('success', 'Data hotel berhasil ditambahkan.');
     }
@@ -69,17 +82,25 @@ class HotelController extends Controller
         $data = $request->safe()->except('gambar');
         $data['slug'] = $this->uniqueSlug($data['nama_hotel'], $hotel);
 
-        if ($request->hasFile('gambar')) {
-            $oldPath = $hotel->gambar;
-            $data['gambar'] = $request->file('gambar')->store('hotels', 'public');
-
-            if ($oldPath && ! Str::startsWith($oldPath, ['http://', 'https://'])) {
-                Storage::disk('public')->delete($oldPath);
-            }
+        $oldPath = $hotel->gambar;
+        $newPath = $request->hasFile('gambar') ? $request->file('gambar')->store('hotels', 'public') : null;
+        if ($newPath) {
+            $data['gambar'] = $newPath;
         }
-
-        $hotel->update($data);
-        $this->log($request, 'Ubah Hotel', "Hotel {$hotel->nama_hotel} diperbarui.");
+        try {
+            DB::transaction(function () use ($hotel, $data, $request) {
+                $hotel->update($data);
+                $this->log($request, 'Ubah Hotel', "Hotel {$hotel->nama_hotel} diperbarui.");
+            });
+        } catch (Throwable $exception) {
+            if ($newPath) {
+                Storage::disk('public')->delete($newPath);
+            }
+            throw $exception;
+        }
+        if ($newPath && $oldPath && ! Str::startsWith($oldPath, ['http://', 'https://'])) {
+            Storage::disk('public')->delete($oldPath);
+        }
 
         return redirect()->route('admin.hotels.show', $hotel)->with('success', 'Data hotel berhasil diperbarui.');
     }
