@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\View\View;
+use RuntimeException;
 use Throwable;
 
 class HotelController extends Controller
@@ -42,9 +43,16 @@ class HotelController extends Controller
     public function store(StoreHotelRequest $request): RedirectResponse
     {
         $data = $request->safe()->except('gambar');
+        $data['harga_max'] ??= $data['harga_min'];
         $data['slug'] = $this->uniqueSlug($data['nama_hotel']);
 
-        $newPath = $request->hasFile('gambar') ? $request->file('gambar')->store('hotels', 'public') : null;
+        try {
+            $newPath = $this->storeImage($request);
+        } catch (Throwable $exception) {
+            report($exception);
+
+            return back()->withInput()->with('error', 'Gambar hotel gagal disimpan. Periksa format file dan konfigurasi storage, lalu coba lagi.');
+        }
         if ($newPath) {
             $data['gambar'] = $newPath;
         }
@@ -80,10 +88,17 @@ class HotelController extends Controller
     public function update(UpdateHotelRequest $request, Hotel $hotel): RedirectResponse
     {
         $data = $request->safe()->except('gambar');
+        $data['harga_max'] ??= $data['harga_min'];
         $data['slug'] = $this->uniqueSlug($data['nama_hotel'], $hotel);
 
         $oldPath = $hotel->gambar;
-        $newPath = $request->hasFile('gambar') ? $request->file('gambar')->store('hotels', 'public') : null;
+        try {
+            $newPath = $this->storeImage($request);
+        } catch (Throwable $exception) {
+            report($exception);
+
+            return back()->withInput()->with('error', 'Gambar hotel gagal disimpan. Gambar lama tetap dipertahankan.');
+        }
         if ($newPath) {
             $data['gambar'] = $newPath;
         }
@@ -126,6 +141,21 @@ class HotelController extends Controller
         }
 
         return $slug;
+    }
+
+    private function storeImage(Request $request): ?string
+    {
+        if (! $request->hasFile('gambar')) {
+            return null;
+        }
+
+        $path = $request->file('gambar')->store('hotels', 'public');
+
+        if (! $path) {
+            throw new RuntimeException('Filesystem public gagal menyimpan gambar hotel.');
+        }
+
+        return $path;
     }
 
     private function log(Request $request, string $aktivitas, string $deskripsi): void

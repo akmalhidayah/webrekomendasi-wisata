@@ -24,7 +24,7 @@ class AdminWisataTest extends TestCase
         $admin = User::where('email', 'admin@gmail.com')->firstOrFail();
 
         $this->actingAs($admin)
-            ->get(route('admin.wisata.index'))
+            ->get(route('admin.wisata.index', ['search' => 'Pantai Losari']))
             ->assertOk()
             ->assertSee('Data Wisata')
             ->assertSee('Pantai Losari');

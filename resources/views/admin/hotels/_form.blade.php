@@ -90,7 +90,10 @@
                         <small>Gambar belum tersedia</small>
                     </div>
                 @endif
-                <input type="file" class="form-control" name="gambar" accept=".jpg,.jpeg,.png,.webp">
+                <input type="file" class="form-control @error('gambar') is-invalid @enderror" name="gambar" accept="image/jpeg,image/png,image/webp">
+                @error('gambar')
+                    <div class="invalid-feedback">{{ $message }}</div>
+                @enderror
                 <div class="form-text">JPG, PNG, atau WebP. Maksimal 2 MB.</div>
             </div>
         </div>
