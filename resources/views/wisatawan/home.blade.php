@@ -1042,7 +1042,6 @@
                         class="btn btn-outline-primary btn-modern mt-4"
                         href="https://makassarkota.go.id/sejarah-kota-makassar/"
                         target="_blank" rel="noopener noreferrer"
-                        rel="noopener noreferrer"
                     >
                         Baca sejarah lengkap <i class="bi bi-arrow-up-right ms-1"></i>
                     </a>
@@ -1052,8 +1051,8 @@
             <div class="col-lg-6">
                 <div class="video-frame h-100">
                     <iframe
-                        src="https://www.youtube.com/embed/IWaUQiI1Q00?autoplay=1&mute=1&loop=1&playlist=IWaUQiI1Q00&controls=1&rel=0&modestbranding=1"
-                        title="Video Pariwisata Makassar"
+                        src="https://www.youtube.com/embed/Br6nx5FXknI?autoplay=1&mute=1&loop=1&playlist=Br6nx5FXknI&controls=1&rel=0&modestbranding=1"
+                        title="Video Sejarah Kota Makassar"
                         allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                         allowfullscreen
                     ></iframe>
