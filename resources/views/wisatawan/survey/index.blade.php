@@ -38,27 +38,39 @@
     .location-icon { width: 70px; height: 70px; display: grid; place-items: center; border-radius: 24px; color: #fff; background: #0369a1; font-size: 2rem; animation: pinPulse 1.8s ease-in-out infinite; }
     .wizard-actions { display: flex; justify-content: space-between; gap: .8rem; margin-top: 1.2rem; }
     .wizard-actions .btn { min-height: 46px; border-radius: 14px; font-weight: 850; }
-    .recommend-loading { position: fixed; inset: 0; z-index: 3000; display: none; place-items: center; padding: 1rem; background: rgba(8, 24, 38, .58); backdrop-filter: blur(14px); }
+    .recommend-loading { position: fixed; inset: 0; z-index: 3000; display: none; place-items: center; padding: max(1rem, env(safe-area-inset-top)) max(1rem, env(safe-area-inset-right)) max(1rem, env(safe-area-inset-bottom)) max(1rem, env(safe-area-inset-left)); background: rgba(3, 18, 31, .92); }
     .recommend-loading.is-visible { display: grid; }
-    .loading-card { width: min(760px, 100%); padding: 1.3rem; border-radius: 28px; background: #fff; box-shadow: 0 28px 70px rgba(2, 8, 23, .24); }
-    .loading-spinner { width: 64px; height: 64px; border: 5px solid #e0f2fe; border-top-color: #0369a1; border-radius: 999px; animation: spin .9s linear infinite; }
-    .loading-steps { display: grid; gap: .45rem; margin: 1rem 0; }
-    .loading-step { display: flex; align-items: center; gap: .55rem; color: #475569; font-size: .86rem; }
-    .loading-step i { color: #0369a1; }
-    .loading-progress { height: 8px; overflow: hidden; border-radius: 999px; background: #e2e8f0; }
-    .loading-progress span { display: block; width: 35%; height: 100%; border-radius: inherit; background: linear-gradient(90deg, #0369a1, #f59e0b); animation: progressMove 1.4s ease-in-out infinite; }
-    .skeleton-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .7rem; margin-top: 1rem; }
-    .skeleton-card { height: 92px; border-radius: 18px; background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 38%, #f1f5f9 63%); background-size: 400% 100%; animation: shimmer 1.3s ease-in-out infinite; }
+    .loading-content { width: min(560px, 100%); display: grid; justify-items: center; gap: .6rem; }
+    .loading-visual { position: relative; width: clamp(170px, 30vw, 250px); aspect-ratio: 1; display: grid; place-items: center; isolation: isolate; }
+    .loading-orbit { position: absolute; inset: 8%; border: 5px solid rgba(255, 255, 255, .18); border-top-color: #38bdf8; border-radius: 50%; animation: loadingOrbit 1s linear infinite; }
+    .loading-icon { position: relative; z-index: 2; width: 48%; aspect-ratio: 1; display: grid; place-items: center; border: 2px solid rgba(255, 255, 255, .7); border-radius: 28px; color: #fff; background: #0369a1; }
+    .loading-icon i { font-size: clamp(3.6rem, 9vw, 5.5rem); line-height: 1; }
+    .loading-status { min-height: 1.65rem; margin: .2rem 0 .75rem; color: #fff; font-size: clamp(.95rem, 2.4vw, 1.08rem); font-weight: 800; letter-spacing: -.01em; text-align: center; }
+    .loading-stages { width: 100%; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: .55rem; }
+    .loading-stage { position: relative; display: grid; justify-items: center; gap: .42rem; min-width: 0; padding: .7rem .35rem; border: 1px solid rgba(255, 255, 255, .16); border-radius: 16px; color: rgba(255, 255, 255, .48); background: #0f293d; transition: color .2s ease, border-color .2s ease, background .2s ease; }
+    .loading-stage i { width: 38px; height: 38px; display: grid; place-items: center; border-radius: 12px; background: #1d3b50; font-size: 1.05rem; transition: .2s ease; }
+    .loading-stage span { max-width: 100%; overflow: hidden; font-size: .68rem; font-weight: 750; text-overflow: ellipsis; white-space: nowrap; }
+    .loading-stage.is-active { color: #fff; border-color: #38bdf8; background: #075985; }
+    .loading-stage.is-active i { color: #082f49; background: #7dd3fc; }
+    .loading-stage.is-complete { color: rgba(255, 255, 255, .82); border-color: rgba(52, 211, 153, .28); }
+    .loading-stage.is-complete i { color: #064e3b; background: #6ee7b7; }
     @keyframes fadeUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
-    @keyframes spin { to { transform: rotate(360deg); } }
-    @keyframes shimmer { 0% { background-position: 100% 0; } 100% { background-position: 0 0; } }
-    @keyframes progressMove { 0% { transform: translateX(-40%); } 100% { transform: translateX(220%); } }
+    @keyframes loadingOrbit { to { transform: rotate(360deg); } }
     @keyframes pinPulse { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
     @media (max-width: 767.98px) {
         .survey-hero { display: block; }
-        .wizard-steps, .hotel-choice, .skeleton-grid { grid-template-columns: 1fr; }
+        .wizard-steps, .hotel-choice { grid-template-columns: 1fr; }
         .wizard-actions { flex-direction: column-reverse; }
         .wizard-actions .btn { width: 100%; }
+        .loading-content { width: min(100%, 360px); }
+        .loading-visual { width: min(58vw, 210px); }
+        .loading-stages { gap: .35rem; }
+        .loading-stage { padding: .58rem .2rem; border-radius: 13px; }
+        .loading-stage i { width: 34px; height: 34px; border-radius: 10px; }
+        .loading-stage span { font-size: .59rem; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+        .loading-orbit { animation-duration: 2.5s; }
     }
 </style>
 @endpush
@@ -192,18 +204,19 @@
     </div>
 </div>
 
-<div class="recommend-loading" id="recommendLoading">
-    <div class="loading-card">
-        <div class="d-flex align-items-center gap-3">
-            <div class="loading-spinner"></div>
-            <div>
-                <h2 class="h4 fw-bold mb-1">Sedang Menghitung Rekomendasi</h2>
-                <p class="text-muted mb-0">Sistem menyusun ranking wisata terbaik dari rating, budget, hotel, dan lokasi Anda.</p>
-            </div>
+<div class="recommend-loading" id="recommendLoading" role="status" aria-live="polite" aria-label="Memproses rekomendasi" aria-hidden="true">
+    <div class="loading-content">
+        <div class="loading-visual" aria-hidden="true">
+            <span class="loading-orbit"></span>
+            <span class="loading-icon"><i class="bi bi-compass-fill"></i></span>
         </div>
-        <div class="loading-steps" id="loadingSteps"></div>
-        <div class="loading-progress"><span></span></div>
-        <div class="skeleton-grid"><div class="skeleton-card"></div><div class="skeleton-card"></div><div class="skeleton-card"></div></div>
+        <p class="loading-status" id="loadingStatus">Membaca preferensi...</p>
+        <div class="loading-stages" aria-hidden="true">
+            <div class="loading-stage is-active" data-loading-stage="0"><i class="bi bi-sliders"></i><span>Preferensi</span></div>
+            <div class="loading-stage" data-loading-stage="1"><i class="bi bi-stars"></i><span>Kecocokan</span></div>
+            <div class="loading-stage" data-loading-stage="2"><i class="bi bi-wallet2"></i><span>Biaya</span></div>
+            <div class="loading-stage" data-loading-stage="3"><i class="bi bi-trophy-fill"></i><span>Hasil</span></div>
+        </div>
     </div>
 </div>
 @endsection
@@ -221,7 +234,9 @@
         const nightField = document.getElementById('nightField');
         const hotelInputs = document.querySelectorAll('input[name="butuh_hotel"]');
         const loading = document.getElementById('recommendLoading');
-        const loadingSteps = document.getElementById('loadingSteps');
+        const loadingStatus = document.getElementById('loadingStatus');
+        const loadingStageElements = [...document.querySelectorAll('[data-loading-stage]')];
+        let loadingTimer = null;
 
         const setStep = (step) => {
             currentStep = step;
@@ -299,18 +314,51 @@
                 return;
             }
             submitBtn.disabled = true;
-            submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Sedang Menghitung...';
-            const steps = [
-                'Membaca rating dan preferensi wisata Anda',
-                'Membentuk matriks rating pengguna',
-                'Menghitung kemiripan dengan Cosine Similarity',
-                'Menyesuaikan rekomendasi dengan rentang budget',
-                hotelNeeded() ? 'Menghitung estimasi biaya wisata dan hotel' : 'Menghitung estimasi biaya wisata',
-                document.getElementById('isLocationAllowed').value === '1' ? 'Menghitung jarak destinasi dari lokasi Anda' : 'Menggunakan rekomendasi tanpa skor jarak lokasi',
-                'Menyusun ranking wisata terbaik'
-            ];
-            loadingSteps.innerHTML = steps.map((step) => `<div class="loading-step"><i class="bi bi-check-circle-fill"></i>${step}</div>`).join('');
+            submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm" aria-hidden="true"></span><span class="visually-hidden">Memproses</span>';
+            loading.setAttribute('aria-hidden', 'false');
             loading.classList.add('is-visible');
+
+            const stages = [
+                'Membaca preferensi...',
+                'Mencari destinasi cocok...',
+                hotelNeeded() ? 'Menghitung wisata & hotel...' : 'Menyesuaikan budget...',
+                'Menyiapkan hasil...'
+            ];
+            let activeStage = 0;
+            const showLoadingStage = () => {
+                loadingStatus.textContent = stages[activeStage];
+                loadingStageElements.forEach((stage, index) => {
+                    stage.classList.toggle('is-active', index === activeStage);
+                    stage.classList.toggle('is-complete', index < activeStage);
+                });
+            };
+
+            showLoadingStage();
+            loadingTimer = window.setInterval(() => {
+                if (activeStage < stages.length - 1) {
+                    activeStage += 1;
+                    showLoadingStage();
+                } else {
+                    window.clearInterval(loadingTimer);
+                    loadingTimer = null;
+                }
+            }, 850);
+        });
+
+        window.addEventListener('pageshow', () => {
+            if (loadingTimer !== null) {
+                window.clearInterval(loadingTimer);
+                loadingTimer = null;
+            }
+            loading.classList.remove('is-visible');
+            loading.setAttribute('aria-hidden', 'true');
+            loadingStatus.textContent = 'Membaca preferensi...';
+            loadingStageElements.forEach((stage, index) => {
+                stage.classList.toggle('is-active', index === 0);
+                stage.classList.remove('is-complete');
+            });
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = '<i class="bi bi-stars me-1"></i>Proses Rekomendasi';
         });
     });
 </script>

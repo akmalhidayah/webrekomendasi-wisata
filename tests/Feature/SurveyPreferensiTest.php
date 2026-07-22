@@ -24,6 +24,24 @@ class SurveyPreferensiTest extends TestCase
         $this->assertNotNull(session('kode_guest'));
     }
 
+    public function test_survey_uses_simple_responsive_icon_loader(): void
+    {
+        $this->seed();
+
+        $this->get(route('wisatawan.survey.index'))
+            ->assertOk()
+            ->assertSee('class="loading-visual"', false)
+            ->assertSee('bi-compass-fill', false)
+            ->assertSee('aria-label="Memproses rekomendasi"', false)
+            ->assertSeeInOrder(['Preferensi', 'Kecocokan', 'Biaya', 'Hasil'])
+            ->assertSee('Mencari destinasi cocok...', false)
+            ->assertSee('Menyiapkan hasil...', false)
+            ->assertDontSee('Sedang Menghitung Rekomendasi')
+            ->assertDontSee('Membentuk matriks rating pengguna')
+            ->assertDontSee('loading-steps', false)
+            ->assertDontSee('skeleton-card', false);
+    }
+
     public function test_valid_ratings_are_saved_for_automatically_created_guest(): void
     {
         $this->seed();
