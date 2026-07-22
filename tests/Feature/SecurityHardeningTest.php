@@ -52,14 +52,25 @@ class SecurityHardeningTest extends TestCase
         HasilRekomendasi::create(['guest_visitor_id' => $guest->id, 'wisata_id' => $wisata->id, 'ranking' => 1]);
         $before = HasilRekomendasi::first()->updated_at;
 
-        $this->withSession(['kode_guest' => $guest->kode_guest])
+        $response = $this->withSession(['kode_guest' => $guest->kode_guest])
             ->get(route('wisatawan.rekomendasi.hasil'))
             ->assertOk()
             ->assertHeader('X-Content-Type-Options', 'nosniff')
             ->assertHeader('X-Frame-Options', 'SAMEORIGIN');
 
+        $contentSecurityPolicy = $response->headers->get('Content-Security-Policy');
+        $this->assertStringContainsString('https://www.youtube-nocookie.com', $contentSecurityPolicy);
+
         $this->assertDatabaseCount('hasil_rekomendasi', 1);
         $this->assertTrue($before->equalTo(HasilRekomendasi::first()->updated_at));
+    }
+
+    public function test_home_allows_and_renders_privacy_friendly_youtube_embed(): void
+    {
+        $this->get(route('wisatawan.home'))
+            ->assertOk()
+            ->assertSee('https://www.youtube-nocookie.com/embed/Br6nx5FXknI', false)
+            ->assertHeaderContains('Content-Security-Policy', 'https://www.youtube-nocookie.com');
     }
 
     public function test_admin_login_is_rate_limited(): void

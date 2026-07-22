@@ -1051,7 +1051,7 @@
             <div class="col-lg-6">
                 <div class="video-frame h-100">
                     <iframe
-                        src="https://www.youtube.com/embed/Br6nx5FXknI?autoplay=1&mute=1&loop=1&playlist=Br6nx5FXknI&controls=1&rel=0&modestbranding=1"
+                        src="https://www.youtube-nocookie.com/embed/Br6nx5FXknI?autoplay=1&mute=1&loop=1&playlist=Br6nx5FXknI&controls=1&rel=0&modestbranding=1"
                         title="Video Sejarah Kota Makassar"
                         allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                         allowfullscreen
