@@ -946,7 +946,7 @@
                             @else
                                 <span class="home-distance-badge is-muted">
                                     <i class="bi bi-signpost"></i>
-                                    Jarak belum tersedia
+                                    Koordinat destinasi belum tersedia
                                 </span>
                             @endif
                         @else

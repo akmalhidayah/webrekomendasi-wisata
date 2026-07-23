@@ -58,6 +58,48 @@ class WisataIndexTest extends TestCase
             ->assertSee('page=2', false);
     }
 
+    public function test_seeded_destinations_show_distance_even_when_user_is_far_away(): void
+    {
+        $this->seed();
+
+        $response = $this->get(route('wisatawan.wisata.index', [
+            'search' => 'Pantai Losari',
+            'lat' => -6.2088,
+            'lng' => 106.8456,
+        ]));
+
+        $response->assertOk()
+            ->assertSee('Pantai Losari')
+            ->assertSee('Jarak dari lokasi Anda:')
+            ->assertDontSee('Koordinat destinasi belum tersedia');
+
+        $distance = $response->viewData('wisata')->firstOrFail()->distance_km;
+
+        $this->assertIsFloat($distance);
+        $this->assertGreaterThan(1000, $distance);
+    }
+
+    public function test_location_seeder_fills_coordinates_for_every_seeded_destination(): void
+    {
+        $this->seed();
+
+        $this->assertSame(25, Wisata::query()->count());
+        $this->assertSame(
+            0,
+            Wisata::query()
+                ->where(fn ($query) => $query->whereNull('latitude')->orWhereNull('longitude'))
+                ->count(),
+        );
+
+        $losari = Wisata::query()->where('slug', 'pantai-losari')->firstOrFail();
+        $bugisWaterpark = Wisata::query()->where('slug', 'bugis-waterpark-adventure')->firstOrFail();
+
+        $this->assertEqualsWithDelta(-5.1434649, (float) $losari->latitude, 0.0000001);
+        $this->assertEqualsWithDelta(119.4074607, (float) $losari->longitude, 0.0000001);
+        $this->assertEqualsWithDelta(-5.1536319, (float) $bugisWaterpark->latitude, 0.0000001);
+        $this->assertEqualsWithDelta(119.4946028, (float) $bugisWaterpark->longitude, 0.0000001);
+    }
+
     public function test_invalid_coordinates_are_ignored_and_zero_coordinates_are_valid(): void
     {
         $this->seed();

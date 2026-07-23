@@ -123,6 +123,7 @@ class HomeController extends Controller
         $lngDelta = deg2rad($destLng - $userLng);
         $a = sin($latDelta / 2) ** 2
             + cos(deg2rad($userLat)) * cos(deg2rad($destLat)) * sin($lngDelta / 2) ** 2;
+        $a = max(0.0, min(1.0, $a));
         $c = 2 * atan2(sqrt($a), sqrt(1 - $a));
 
         return round($earthRadius * $c, 1);

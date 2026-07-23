@@ -59,8 +59,8 @@
             <div class="card-header"><strong>Informasi Lokasi</strong></div>
             <div class="card-body">
                 <dl class="row mb-0">
-                    <dt class="col-sm-4">Latitude</dt><dd class="col-sm-8">{{ $wisata->latitude ?: '-' }}</dd>
-                    <dt class="col-sm-4">Longitude</dt><dd class="col-sm-8">{{ $wisata->longitude ?: '-' }}</dd>
+                    <dt class="col-sm-4">Latitude</dt><dd class="col-sm-8">{{ $wisata->latitude ?? '-' }}</dd>
+                    <dt class="col-sm-4">Longitude</dt><dd class="col-sm-8">{{ $wisata->longitude ?? '-' }}</dd>
                     <dt class="col-sm-4">Koordinat</dt><dd class="col-sm-8">{{ $wisata->coordinate_label }}</dd>
                     <dt class="col-sm-4">Maps URL</dt><dd class="col-sm-8">@if ($mapsUrl)<a href="{{ $mapsUrl }}" target="_blank" rel="noopener noreferrer">Buka Maps</a>@else-@endif</dd>
                 </dl>

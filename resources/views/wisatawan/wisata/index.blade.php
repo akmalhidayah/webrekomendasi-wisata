@@ -323,7 +323,7 @@
                             @else
                                 <div class="wisata-distance is-muted">
                                     <i class="bi bi-signpost"></i>
-                                    Jarak belum tersedia
+                                    Koordinat destinasi belum tersedia
                                 </div>
                             @endif
                         @else
