@@ -36,7 +36,21 @@ class RekomendasiController extends Controller
             return redirect()->route('wisatawan.survey.index')->with('error', 'Silakan isi survey preferensi terlebih dahulu.');
         }
 
-        $recommendationService->generateRecommendations($guest, 5);
+        $targetRatings = $recommendationService->getTargetRatings($guest);
+        $pattern = $recommendationService->classifyPreferencePattern(array_values($targetRatings));
+        $patternMessage = $recommendationService->preferencePatternMessage($pattern);
+
+        if ($patternMessage !== null) {
+            $recommendationService->saveRecommendations($guest, []);
+            $request->session()->put('survey_wisata_ids', array_keys($targetRatings));
+            $request->session()->forget('recommendation_issue');
+
+            return redirect()->route('wisatawan.survey.index')
+                ->withErrors(['preference_pattern' => $patternMessage]);
+        }
+
+        $outcome = $recommendationService->generateRecommendationOutcome($guest, 5);
+        $this->storeRecommendationIssue($request, $guest, $outcome);
         LogAktivitas::create([
             'guest_visitor_id' => $guest->id,
             'aktivitas' => 'Rekomendasi Diproses',
@@ -61,10 +75,48 @@ class RekomendasiController extends Controller
             ->get()
             ->values();
         $isFallback = $hasil->contains(fn ($item) => str_contains($item->metode, 'Fallback'));
+        $isBroadInterest = $hasil->contains(fn ($item) => $item->metode === 'Broad Interest');
         $topRecommendation = $hasil->first();
         $showResultPopup = (bool) $request->session()->pull('recommendation_generated', false);
+        $recommendationIssue = $request->session()->get('recommendation_issue');
 
-        return view('wisatawan.rekomendasi.hasil', compact('guest', 'hasil', 'isFallback', 'topRecommendation', 'showResultPopup'));
+        return view('wisatawan.rekomendasi.hasil', compact(
+            'guest',
+            'hasil',
+            'isFallback',
+            'isBroadInterest',
+            'topRecommendation',
+            'showResultPopup',
+            'recommendationIssue',
+        ));
+    }
+
+    public function tanpaHotel(
+        Request $request,
+        CollaborativeFilteringService $recommendationService,
+    ): RedirectResponse {
+        $guest = $this->guestFromSession($request);
+
+        if (! $guest || ! $guest->surveyPreferensi()->exists()) {
+            return redirect()->route('wisatawan.survey.index')->with('error', 'Silakan isi survey preferensi terlebih dahulu.');
+        }
+
+        $guest->update([
+            'butuh_hotel' => false,
+            'jumlah_malam' => 1,
+        ]);
+        $guest->refresh();
+        $outcome = $recommendationService->generateRecommendationOutcome($guest, 5);
+        $this->storeRecommendationIssue($request, $guest, $outcome);
+
+        LogAktivitas::create([
+            'guest_visitor_id' => $guest->id,
+            'aktivitas' => 'Rekomendasi Diproses Tanpa Hotel',
+            'deskripsi' => 'Pengunjung menonaktifkan kebutuhan hotel dan menghitung ulang rekomendasi.',
+            'ip_address' => $request->ip(),
+        ]);
+
+        return redirect()->route('wisatawan.rekomendasi.hasil')->with('recommendation_generated', true);
     }
 
     public function reset(Request $request): RedirectResponse
@@ -84,7 +136,7 @@ class RekomendasiController extends Controller
             });
         }
 
-        $request->session()->forget('survey_wisata_ids');
+        $request->session()->forget(['survey_wisata_ids', 'recommendation_issue']);
 
         return redirect()->route('wisatawan.survey.index')->with('success', 'Silakan isi ulang survey preferensi.');
     }
@@ -94,5 +146,21 @@ class RekomendasiController extends Controller
         $code = $request->session()->get('kode_guest');
 
         return $code ? GuestVisitor::where('kode_guest', $code)->first() : null;
+    }
+
+    private function storeRecommendationIssue(Request $request, GuestVisitor $guest, array $outcome): void
+    {
+        if ($outcome['status'] === 'success') {
+            $request->session()->forget('recommendation_issue');
+
+            return;
+        }
+
+        $request->session()->put('recommendation_issue', [
+            'type' => $outcome['status'],
+            'budget_max' => $guest->budget_max !== null ? (float) $guest->budget_max : null,
+            'minimum_required_budget' => $outcome['minimum_required_budget'],
+            'hotel_required' => (bool) $guest->butuh_hotel,
+        ]);
     }
 }

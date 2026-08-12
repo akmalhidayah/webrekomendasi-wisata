@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Wisatawan;
 
+use App\Services\CollaborativeFilteringService;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
@@ -24,8 +25,8 @@ class StoreSurveyPreferensiRequest extends FormRequest
                     ->whereNull('deleted_at')),
             ],
             'ratings.*.rating_awal' => ['required', 'integer', 'min:1', 'max:5'],
-            'budget_min' => ['required', 'numeric', 'min:0'],
-            'budget_max' => ['required', 'numeric', 'min:0', 'gte:budget_min'],
+            'budget_min' => ['nullable', 'numeric', 'min:0'],
+            'budget_max' => ['nullable', 'numeric', 'min:0'],
             'butuh_hotel' => ['required', 'boolean'],
             'jumlah_malam' => ['nullable', 'required_if:butuh_hotel,1', 'integer', 'min:1', 'max:30'],
             'user_latitude' => ['nullable', 'numeric', 'between:-90,90'],
@@ -40,9 +41,6 @@ class StoreSurveyPreferensiRequest extends FormRequest
             'ratings.size' => 'Semua 10 destinasi harus diberi rating.',
             'ratings.*.wisata_id.distinct' => 'Destinasi pada survei tidak boleh duplikat.',
             'ratings.*.rating_awal.required' => 'Semua destinasi harus diberi rating.',
-            'budget_min.required' => 'Budget minimum wajib diisi.',
-            'budget_max.required' => 'Budget maksimum wajib diisi.',
-            'budget_max.gte' => 'Budget maksimum tidak boleh lebih kecil dari budget minimum.',
             'jumlah_malam.required_if' => 'Jumlah malam wajib diisi jika membutuhkan hotel.',
         ];
     }
@@ -55,6 +53,27 @@ class StoreSurveyPreferensiRequest extends FormRequest
 
             if ($expected->count() !== 10 || $submitted->all() !== $expected->all()) {
                 $validator->errors()->add('ratings', 'Destinasi survei tidak sesuai dengan sesi. Muat ulang halaman survei.');
+            }
+
+            if ($this->filled('budget_min')
+                && $this->filled('budget_max')
+                && (float) $this->input('budget_max') < (float) $this->input('budget_min')) {
+                $validator->errors()->add('budget_max', 'Budget maksimum tidak boleh lebih kecil dari budget minimum.');
+            }
+
+            if ($submitted->count() !== 10) {
+                return;
+            }
+
+            $ratings = collect($this->input('ratings', []))
+                ->pluck('rating_awal')
+                ->map(fn ($rating) => (int) $rating)
+                ->all();
+            $pattern = app(CollaborativeFilteringService::class)->classifyPreferencePattern($ratings);
+            $message = app(CollaborativeFilteringService::class)->preferencePatternMessage($pattern);
+
+            if ($message !== null) {
+                $validator->errors()->add('preference_pattern', $message);
             }
         });
     }

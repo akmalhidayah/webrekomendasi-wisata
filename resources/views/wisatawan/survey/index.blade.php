@@ -36,6 +36,11 @@
     .choice-card:has(input:checked) { border-color: #0369a1; background: #f0f9ff; box-shadow: 0 12px 26px rgba(3, 105, 161, .12); }
     .location-box { padding: 1.2rem; border: 1px solid #dbeafe; border-radius: 22px; background: linear-gradient(135deg, #eff6ff, #fff); }
     .location-icon { width: 70px; height: 70px; display: grid; place-items: center; border-radius: 24px; color: #fff; background: #0369a1; font-size: 2rem; animation: pinPulse 1.8s ease-in-out infinite; }
+    .survey-map { margin-top: 1rem; overflow: hidden; border: 1px solid #bfdbfe; border-radius: 20px; background: #e2e8f0; }
+    .survey-map[hidden] { display: none; }
+    .survey-map iframe { display: block; width: 100%; height: clamp(280px, 34vw, 340px); border: 0; }
+    .preference-feedback { display: none; margin-top: 1rem; }
+    .preference-feedback.is-visible { display: block; }
     .wizard-actions { display: flex; justify-content: space-between; gap: .8rem; margin-top: 1.2rem; }
     .wizard-actions .btn { min-height: 46px; border-radius: 14px; font-weight: 850; }
     .recommend-loading { position: fixed; inset: 0; z-index: 3000; display: none; place-items: center; padding: max(1rem, env(safe-area-inset-top)) max(1rem, env(safe-area-inset-right)) max(1rem, env(safe-area-inset-bottom)) max(1rem, env(safe-area-inset-left)); background: rgba(3, 18, 31, .92); }
@@ -100,6 +105,7 @@
                     <p>Beri rating 1-5 untuk seluruh 10 destinasi.</p>
                 </div>
                 <div class="wizard-panel-body">
+                    <div id="preferenceClientError" class="alert alert-warning preference-feedback" role="alert"></div>
                     <div class="row g-4">
                         @foreach ($wisata as $index => $item)
                             <div class="col-md-6 col-xl-4">
@@ -120,7 +126,7 @@
                                         <select class="form-select rating-input" name="ratings[{{ $index }}][rating_awal]" required>
                                             <option value="">Pilih rating</option>
                                             @for ($rating = 1; $rating <= 5; $rating++)
-                                                <option value="{{ $rating }}" @selected(old("ratings.$index.rating_awal") == $rating)>{{ $rating }} - {{ [1 => 'Sangat Tidak Tertarik', 2 => 'Tidak Tertarik', 3 => 'Cukup Tertarik', 4 => 'Tertarik', 5 => 'Sangat Tertarik'][$rating] }}</option>
+                                                <option value="{{ $rating }}" @selected(old("ratings.$index.rating_awal", $savedRatings->get($item->id)) == $rating)>{{ $rating }} - {{ [1 => 'Sangat Tidak Tertarik', 2 => 'Tidak Tertarik', 3 => 'Cukup Tertarik', 4 => 'Tertarik', 5 => 'Sangat Tertarik'][$rating] }}</option>
                                             @endfor
                                         </select>
                                     </div>
@@ -141,9 +147,10 @@
                         <div class="col-lg-6">
                             <div class="budget-card h-100">
                                 <label class="form-label fw-bold">Budget minimum</label>
-                                <input type="number" min="0" step="1000" class="form-control mb-3" name="budget_min" value="{{ old('budget_min', 100000) }}" required>
+                                <input type="number" min="0" step="1000" class="form-control mb-3" name="budget_min" value="{{ $formValues['budget_min'] }}" placeholder="Budget minimum (opsional)">
                                 <label class="form-label fw-bold">Budget maksimum</label>
-                                <input type="number" min="0" step="1000" class="form-control" name="budget_max" value="{{ old('budget_max', 1000000) }}" required>
+                                <input type="number" min="0" step="1000" class="form-control" name="budget_max" value="{{ $formValues['budget_max'] }}" placeholder="Budget maksimum (opsional)">
+                                <div class="form-text mt-2">Budget maksimum menjadi batas total yang tidak akan dilampaui rekomendasi.</div>
                             </div>
                         </div>
                         <div class="col-lg-6">
@@ -151,19 +158,19 @@
                                 <label class="form-label fw-bold">Kebutuhan hotel</label>
                                 <div class="hotel-choice mb-3">
                                     <label class="choice-card">
-                                        <input type="radio" name="butuh_hotel" value="0" @checked(old('butuh_hotel', '0') === '0')>
+                                        <input type="radio" name="butuh_hotel" value="0" @checked($formValues['butuh_hotel'] === '0')>
                                         <strong>Tidak membutuhkan hotel</strong>
                                         <small>Budget hanya dihitung dari estimasi wisata.</small>
                                     </label>
                                     <label class="choice-card">
-                                        <input type="radio" name="butuh_hotel" value="1" @checked(old('butuh_hotel') === '1')>
+                                        <input type="radio" name="butuh_hotel" value="1" @checked($formValues['butuh_hotel'] === '1')>
                                         <strong>Membutuhkan hotel</strong>
                                         <small>Budget ditambah harga hotel terkait.</small>
                                     </label>
                                 </div>
                                 <div id="nightField" style="display:none">
                                     <label class="form-label fw-bold">Jumlah malam</label>
-                                    <input type="number" min="1" max="30" class="form-control" name="jumlah_malam" value="{{ old('jumlah_malam', 1) }}">
+                                    <input type="number" min="1" max="30" class="form-control" name="jumlah_malam" value="{{ $formValues['jumlah_malam'] }}">
                                 </div>
                             </div>
                         </div>
@@ -187,11 +194,14 @@
                             <button class="btn btn-primary" type="button" id="useLocationBtn"><i class="bi bi-crosshair me-1"></i>Gunakan Lokasi Saya</button>
                             <button class="btn btn-outline-secondary" type="button" id="skipLocationBtn">Lewati Lokasi</button>
                         </div>
+                        <div class="survey-map" id="surveyMapWrapper" hidden>
+                            <iframe id="surveyLocationMap" title="Preview titik lokasi Anda di Google Maps" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+                        </div>
                     </div>
 
-                    <input type="hidden" name="user_latitude" id="userLatitude" value="{{ old('user_latitude') }}">
-                    <input type="hidden" name="user_longitude" id="userLongitude" value="{{ old('user_longitude') }}">
-                    <input type="hidden" name="is_location_allowed" id="isLocationAllowed" value="{{ old('is_location_allowed', 0) }}">
+                    <input type="hidden" name="user_latitude" id="userLatitude" value="{{ $formValues['user_latitude'] }}">
+                    <input type="hidden" name="user_longitude" id="userLongitude" value="{{ $formValues['user_longitude'] }}">
+                    <input type="hidden" name="is_location_allowed" id="isLocationAllowed" value="{{ $formValues['is_location_allowed'] }}">
                 </div>
             </section>
 
@@ -222,9 +232,10 @@
 @endsection
 
 @push('scripts')
+@vite('resources/js/survey-location.js')
 <script>
     document.addEventListener('DOMContentLoaded', () => {
-        let currentStep = 1;
+        let currentStep = {{ $initialStep }};
         const panels = document.querySelectorAll('.wizard-panel');
         const labels = document.querySelectorAll('.wizard-step');
         const backBtn = document.getElementById('backStepBtn');
@@ -236,6 +247,7 @@
         const loading = document.getElementById('recommendLoading');
         const loadingStatus = document.getElementById('loadingStatus');
         const loadingStageElements = [...document.querySelectorAll('[data-loading-stage]')];
+        const preferenceClientError = document.getElementById('preferenceClientError');
         let loadingTimer = null;
 
         const setStep = (step) => {
@@ -254,17 +266,36 @@
 
         const validateStep = () => {
             if (currentStep === 1) {
-                const missing = [...document.querySelectorAll('.rating-input')].some((input) => !input.value);
+                const ratingInputs = [...document.querySelectorAll('.rating-input')];
+                const missing = ratingInputs.some((input) => !input.value);
                 if (missing) {
-                    alert('Semua 10 destinasi harus diberi rating.');
+                    preferenceClientError.textContent = 'Semua 10 destinasi harus diberi rating.';
+                    preferenceClientError.classList.add('is-visible');
                     return false;
                 }
+
+                const ratings = ratingInputs.map((input) => Number(input.value));
+                const allLow = ratings.every((rating) => rating >= 1 && rating <= 2);
+                const allMiddle = ratings.every((rating) => rating === 3);
+                if (allLow || allMiddle) {
+                    preferenceClientError.textContent = allLow
+                        ? 'Pilih minimal satu destinasi dengan nilai 3–5 agar minat Anda dapat dikenali.'
+                        : 'Rating masih terlalu seragam. Berikan nilai berbeda pada beberapa destinasi.';
+                    preferenceClientError.classList.add('is-visible');
+                    return false;
+                }
+
+                preferenceClientError.classList.remove('is-visible');
             }
             if (currentStep === 2) {
-                const min = Number(document.querySelector('[name="budget_min"]').value);
-                const max = Number(document.querySelector('[name="budget_max"]').value);
-                if (!Number.isFinite(min) || !Number.isFinite(max) || min < 0 || max < min) {
-                    alert('Periksa kembali rentang budget Anda.');
+                const minRaw = document.querySelector('[name="budget_min"]').value.trim();
+                const maxRaw = document.querySelector('[name="budget_max"]').value.trim();
+                const min = minRaw === '' ? null : Number(minRaw);
+                const max = maxRaw === '' ? null : Number(maxRaw);
+                if ((min !== null && (!Number.isFinite(min) || min < 0))
+                    || (max !== null && (!Number.isFinite(max) || max < 0))
+                    || (min !== null && max !== null && max < min)) {
+                    alert('Periksa kembali rentang budget Anda. Kedua nilai boleh dikosongkan.');
                     return false;
                 }
                 if (hotelNeeded() && Number(document.querySelector('[name="jumlah_malam"]').value || 0) < 1) {
@@ -279,34 +310,6 @@
             if (validateStep()) setStep(Math.min(3, currentStep + 1));
         });
         backBtn.addEventListener('click', () => setStep(Math.max(1, currentStep - 1)));
-
-        document.getElementById('useLocationBtn').addEventListener('click', () => {
-            const status = document.getElementById('locationStatus');
-            if (!navigator.geolocation) {
-                status.textContent = 'Browser tidak mendukung geolocation. Rekomendasi tetap dapat diproses tanpa skor jarak.';
-                document.getElementById('isLocationAllowed').value = 0;
-                return;
-            }
-            status.textContent = 'Mengambil lokasi...';
-            navigator.geolocation.getCurrentPosition((position) => {
-                const lat = position.coords.latitude.toFixed(7);
-                const lng = position.coords.longitude.toFixed(7);
-                document.getElementById('userLatitude').value = lat;
-                document.getElementById('userLongitude').value = lng;
-                document.getElementById('isLocationAllowed').value = 1;
-                status.textContent = `Lokasi berhasil diambil: ${lat}, ${lng}`;
-            }, () => {
-                document.getElementById('isLocationAllowed').value = 0;
-                status.textContent = 'Lokasi ditolak atau gagal diambil. Rekomendasi tetap dapat diproses tanpa skor jarak.';
-            }, { enableHighAccuracy: true, timeout: 10000 });
-        });
-
-        document.getElementById('skipLocationBtn').addEventListener('click', () => {
-            document.getElementById('userLatitude').value = '';
-            document.getElementById('userLongitude').value = '';
-            document.getElementById('isLocationAllowed').value = 0;
-            document.getElementById('locationStatus').textContent = 'Lokasi dilewati. Sistem akan memakai rating, budget, dan preferensi.';
-        });
 
         form.addEventListener('submit', (event) => {
             if (!validateStep()) {
@@ -360,6 +363,8 @@
             submitBtn.disabled = false;
             submitBtn.innerHTML = '<i class="bi bi-stars me-1"></i>Proses Rekomendasi';
         });
+
+        setStep(currentStep);
     });
 </script>
 @endpush

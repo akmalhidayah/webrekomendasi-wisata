@@ -113,6 +113,9 @@ function setButtonState(button, state) {
 }
 
 function initializeLocationManager() {
+    const managerControls = document.querySelectorAll('.wisata-location-trigger, .js-home-location, [data-location-clear]');
+    if (managerControls.length === 0) return;
+
     const url = new URL(window.location.href);
     const urlLocation = locationFromUrl(url);
 

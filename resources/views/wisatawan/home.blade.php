@@ -827,8 +827,8 @@
             </div>
 
             <h1 class="hero-title mb-4">
-                Makassar punya cerita.<br>
-                <span>Temukan versimu.</span>
+                Sistem Rekomendasi<br>
+                <span>Wisata Kota Makassar</span>
             </h1>
 
 

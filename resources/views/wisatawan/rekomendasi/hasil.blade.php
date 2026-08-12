@@ -45,6 +45,12 @@
     .recommend-actions { display: flex; flex-wrap: wrap; gap: .55rem; margin-top: 1rem; }
     .recommend-actions .btn { border-radius: 13px; font-weight: 850; font-size: .8rem; }
     .empty-state { padding: 3rem 1.5rem; border: 1px solid #dfe7ef; border-radius: 24px; background: #fff; text-align: center; box-shadow: 0 14px 34px rgba(15, 23, 42, .05); }
+    .budget-state { padding: clamp(1.5rem, 4vw, 2.5rem); border: 1px solid #fcd34d; border-radius: 24px; background: #fffbeb; }
+    .budget-state-icon { width: 62px; height: 62px; display: grid; place-items: center; border-radius: 18px; color: #92400e; background: #fde68a; font-size: 1.7rem; }
+    .budget-summary { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .75rem; margin: 1.2rem 0; }
+    .budget-summary div { padding: .9rem; border: 1px solid #fde68a; border-radius: 16px; background: #fff; }
+    .budget-summary small { display: block; color: #78716c; }
+    .budget-summary strong { display: block; margin-top: .25rem; color: #451a03; }
     @keyframes fadeUp { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
     @keyframes scoreFill { from { width: 0; } }
     @media (max-width: 991.98px) {
@@ -54,7 +60,7 @@
         .result-actions { justify-content: flex-start; }
     }
     @media (max-width: 575.98px) {
-        .metric-grid, .score-detail-grid { grid-template-columns: 1fr; }
+        .metric-grid, .score-detail-grid, .budget-summary { grid-template-columns: 1fr; }
         .hotel-strip { display: block; }
         .recommend-actions .btn, .result-actions .btn { width: 100%; }
     }
@@ -75,7 +81,13 @@
             <div class="col-lg-8">
                 <div class="result-kicker"><i class="bi bi-stars"></i> Rekomendasi Personal</div>
                 <h1 class="result-title">Hasil Rekomendasi Wisata</h1>
-                <p class="result-subtitle mb-3">Ranking dihitung dari Collaborative Filtering, budget, kebutuhan hotel, jarak lokasi, preferensi kategori, dan rating destinasi.</p>
+                <p class="result-subtitle mb-3">
+                    @if ($isBroadInterest)
+                        Ranking disusun dari kualitas destinasi, budget, kebutuhan hotel, dan jarak yang tersedia untuk profil minat luas Anda.
+                    @else
+                        Ranking dihitung dari Collaborative Filtering, budget, kebutuhan hotel, jarak lokasi, preferensi kategori, dan rating destinasi.
+                    @endif
+                </p>
                 <div class="guest-code"><i class="bi bi-person-badge"></i> Kode guest: <code>{{ $guest->kode_guest }}</code></div>
             </div>
             <div class="col-lg-4">
@@ -91,24 +103,74 @@
         </div>
     </div>
 
-    <div class="result-info mb-4">
-        <i class="bi bi-info-circle-fill"></i>
-        <div>
-            <strong>Informasi Perhitungan</strong>
-            <div class="small">Jika lokasi tersedia: 40% CF + 25% Budget + 20% Jarak + 10% Preferensi + 5% Rating Destinasi. Jika lokasi dilewati: bobot jarak dialihkan ke CF, preferensi, dan rating.</div>
+    @if ($hasil->isNotEmpty())
+        <div class="result-info mb-4">
+            <i class="bi bi-info-circle-fill"></i>
+            <div>
+                @if ($isBroadInterest)
+                    <strong>Mode Minat Luas</strong>
+                    <div class="small">Pilihan Anda menunjukkan minat yang luas. Ranking menggunakan kualitas destinasi serta budget dan jarak ketika tersedia, tanpa similarity Collaborative Filtering.</div>
+                @elseif ($isFallback)
+                    <strong>Mode Fallback</strong>
+                    <div class="small">Tetangga CF yang valid belum cukup. Ranking tetap mengikuti budget maksimum, kebutuhan hotel, preferensi, jarak, dan rating destinasi.</div>
+                @else
+                    <strong>Informasi Perhitungan</strong>
+                    <div class="small">Jika lokasi tersedia: 40% CF + 25% Budget + 20% Jarak + 10% Preferensi + 5% Rating Destinasi. Tanpa lokasi: 50% CF + 25% Budget + 15% Preferensi + 10% Rating Destinasi.</div>
+                @endif
+            </div>
         </div>
-    </div>
+    @endif
 
     @if ($hasil->isEmpty())
-        <div class="empty-state">
-            <div class="display-5 text-primary mb-3"><i class="bi bi-magic"></i></div>
-            <h2 class="h4 fw-bold">Hasil rekomendasi belum tersedia</h2>
-            <p class="text-muted mb-4">Klik tombol di bawah ini untuk memproses rekomendasi berdasarkan survei preferensi yang telah Anda isi.</p>
-            <form method="POST" action="{{ route('wisatawan.rekomendasi.proses') }}">
-                @csrf
-                <button class="btn btn-primary btn-lg rounded-pill px-4"><i class="bi bi-stars me-1"></i>Proses Rekomendasi</button>
-            </form>
-        </div>
+        @if (($recommendationIssue['type'] ?? null) === 'budget_insufficient')
+            @php
+                $budgetMax = $recommendationIssue['budget_max'] ?? null;
+                $minimum = $recommendationIssue['minimum_required_budget'] ?? null;
+                $difference = $budgetMax !== null && $minimum !== null ? max(0, $minimum - $budgetMax) : null;
+            @endphp
+            <div class="budget-state">
+                <div class="budget-state-icon mb-3"><i class="bi bi-wallet2"></i></div>
+                <h2 class="h3 fw-bold">Budget belum mencukupi</h2>
+                <p class="text-muted mb-0">
+                    Tidak ditemukan destinasi{{ ($recommendationIssue['hotel_required'] ?? false) ? ' beserta hotel' : '' }} yang sesuai dengan budget maksimal {{ $formatRupiah($budgetMax) }}.
+                    @if ($minimum !== null) Estimasi biaya minimum yang tersedia adalah {{ $formatRupiah($minimum) }}. @endif
+                </p>
+                <div class="budget-summary">
+                    <div><small>Budget saat ini</small><strong>{{ $formatRupiah($budgetMax) }}</strong></div>
+                    <div><small>Estimasi minimum</small><strong>{{ $minimum !== null ? $formatRupiah($minimum) : '-' }}</strong></div>
+                    <div><small>Selisih kebutuhan</small><strong>{{ $difference !== null ? $formatRupiah($difference) : '-' }}</strong></div>
+                </div>
+                <div class="d-flex flex-wrap gap-2">
+                    <a class="btn btn-primary" href="{{ route('wisatawan.survey.index', ['step' => 2]) }}"><i class="bi bi-pencil-square me-1"></i>Ubah Budget</a>
+                    @if ($recommendationIssue['hotel_required'] ?? false)
+                        <form method="POST" action="{{ route('wisatawan.rekomendasi.tanpa-hotel') }}">
+                            @csrf
+                            <button class="btn btn-outline-primary"><i class="bi bi-building-x me-1"></i>Tanpa Hotel</button>
+                        </form>
+                    @endif
+                </div>
+            </div>
+        @elseif (($recommendationIssue['type'] ?? null) === 'hotel_unavailable')
+            <div class="budget-state">
+                <div class="budget-state-icon mb-3"><i class="bi bi-building-x"></i></div>
+                <h2 class="h3 fw-bold">Hotel belum tersedia</h2>
+                <p class="text-muted">Belum ada hotel aktif yang terkait dengan kandidat destinasi. Anda dapat melanjutkan rekomendasi tanpa hotel atau meninjau kembali pilihan survei.</p>
+                <form method="POST" action="{{ route('wisatawan.rekomendasi.tanpa-hotel') }}">
+                    @csrf
+                    <button class="btn btn-primary"><i class="bi bi-building-x me-1"></i>Lanjutkan Tanpa Hotel</button>
+                </form>
+            </div>
+        @else
+            <div class="empty-state">
+                <div class="display-5 text-primary mb-3"><i class="bi bi-magic"></i></div>
+                <h2 class="h4 fw-bold">Hasil rekomendasi belum tersedia</h2>
+                <p class="text-muted mb-4">Klik tombol di bawah ini untuk memproses rekomendasi berdasarkan survei preferensi yang telah Anda isi.</p>
+                <form method="POST" action="{{ route('wisatawan.rekomendasi.proses') }}">
+                    @csrf
+                    <button class="btn btn-primary btn-lg rounded-pill px-4"><i class="bi bi-stars me-1"></i>Proses Rekomendasi</button>
+                </form>
+            </div>
+        @endif
     @else
         <div class="recommend-list">
             @foreach ($hasil as $index => $item)
@@ -120,6 +182,13 @@
                     $reasons = collect($item->alasan_rekomendasi ?? [])->filter()->values();
                     $mapsUrl = $item->wisata?->maps_url ?: $item->wisata?->link_maps;
                     $hasDistance = ! is_null($item->jarak_km);
+                    $isBroadItem = $item->metode === 'Broad Interest';
+                    $broadBaseWeight = 0.50
+                        + ($guest->hasBudgetPreference() ? 0.30 : 0)
+                        + ($hasDistance ? 0.20 : 0);
+                    $broadRatingWeight = $isBroadItem ? round(0.50 / $broadBaseWeight * 100, 1) : null;
+                    $broadBudgetWeight = $isBroadItem && $guest->hasBudgetPreference() ? round(0.30 / $broadBaseWeight * 100, 1) : null;
+                    $broadDistanceWeight = $isBroadItem && $hasDistance ? round(0.20 / $broadBaseWeight * 100, 1) : null;
                 @endphp
 
                 @if ($item->wisata)
@@ -186,7 +255,14 @@
                                                 <div class="metric-item"><small>Skor Akhir</small><strong>{{ $formatScore($item->skor_akhir) }}</strong></div>
                                             </div>
                                             <div class="formula-box">
-                                                Formula: {{ $hasDistance ? '40% CF + 25% Budget + 20% Jarak + 10% Preferensi + 5% Rating Destinasi' : '50% CF + 25% Budget + 15% Preferensi + 10% Rating Destinasi' }}
+                                                @if ($isBroadItem)
+                                                    Mode Minat Luas:
+                                                    {{ number_format($broadRatingWeight, 1, ',', '.') }}% Rating Destinasi
+                                                    @if ($broadBudgetWeight !== null) + {{ number_format($broadBudgetWeight, 1, ',', '.') }}% Budget @endif
+                                                    @if ($broadDistanceWeight !== null) + {{ number_format($broadDistanceWeight, 1, ',', '.') }}% Jarak @endif
+                                                @else
+                                                    Formula: {{ $hasDistance ? '40% CF + 25% Budget + 20% Jarak + 10% Preferensi + 5% Rating Destinasi' : '50% CF + 25% Budget + 15% Preferensi + 10% Rating Destinasi' }}
+                                                @endif
                                             </div>
                                         </div>
                                     </div>

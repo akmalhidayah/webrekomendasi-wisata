@@ -48,6 +48,16 @@ class GuestVisitor extends Model
         return $this->is_location_allowed && $this->user_latitude !== null && $this->user_longitude !== null;
     }
 
+    public function hasBudgetMaximum(): bool
+    {
+        return $this->budget_max !== null;
+    }
+
+    public function hasBudgetPreference(): bool
+    {
+        return $this->budget_min !== null || $this->budget_max !== null;
+    }
+
     public function surveyPreferensi(): HasMany
     {
         return $this->hasMany(SurveyPreferensi::class);

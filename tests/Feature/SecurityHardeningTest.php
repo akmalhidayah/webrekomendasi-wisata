@@ -73,6 +73,18 @@ class SecurityHardeningTest extends TestCase
             ->assertHeaderContains('Content-Security-Policy', 'https://www.youtube-nocookie.com');
     }
 
+    public function test_home_uses_the_system_recommendation_heading(): void
+    {
+        $this->seed();
+
+        $this->get(route('wisatawan.home'))
+            ->assertOk()
+            ->assertSee('Sistem Rekomendasi')
+            ->assertSee('Wisata Kota Makassar')
+            ->assertDontSee('Makassar punya cerita')
+            ->assertDontSee('Temukan versimu');
+    }
+
     public function test_admin_login_is_rate_limited(): void
     {
         for ($attempt = 0; $attempt < 5; $attempt++) {

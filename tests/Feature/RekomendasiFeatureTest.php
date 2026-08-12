@@ -98,4 +98,33 @@ class RekomendasiFeatureTest extends TestCase
             ->assertOk()
             ->assertSeeInOrder(['Wisata Ranking Satu', 'Wisata Ranking Dua']);
     }
+
+    public function test_legacy_all_low_survey_is_rejected_before_recommendation_generation(): void
+    {
+        $this->seed();
+        $guest = GuestVisitor::create(['kode_guest' => 'GST-LEGACY-LOW']);
+        $wisata = Wisata::where('status', 'aktif')->limit(10)->get();
+        foreach ($wisata as $item) {
+            SurveyPreferensi::create([
+                'guest_visitor_id' => $guest->id,
+                'wisata_id' => $item->id,
+                'rating_awal' => 2,
+            ]);
+        }
+        HasilRekomendasi::create([
+            'guest_visitor_id' => $guest->id,
+            'wisata_id' => Wisata::whereNotIn('id', $wisata->pluck('id'))->firstOrFail()->id,
+            'nilai_prediksi' => 5,
+            'ranking' => 1,
+            'metode' => 'Stale',
+        ]);
+
+        $this->withSession(['kode_guest' => $guest->kode_guest])
+            ->post(route('wisatawan.rekomendasi.proses'))
+            ->assertRedirect(route('wisatawan.survey.index'))
+            ->assertSessionHasErrors('preference_pattern');
+
+        $this->assertSame(10, $guest->surveyPreferensi()->count());
+        $this->assertSame(0, $guest->hasilRekomendasi()->count());
+    }
 }

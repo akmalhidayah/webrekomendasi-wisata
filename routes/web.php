@@ -26,6 +26,7 @@ Route::post('/rekomendasi/survey', [SurveyPreferensiController::class, 'store'])
 Route::get('/rekomendasi/survey/success', [SurveyPreferensiController::class, 'success'])->name('wisatawan.survey.success');
 Route::get('/rekomendasi', [RekomendasiController::class, 'index'])->name('wisatawan.rekomendasi.index');
 Route::post('/rekomendasi/proses', [RekomendasiController::class, 'proses'])->middleware('throttle:recommendation')->name('wisatawan.rekomendasi.proses');
+Route::post('/rekomendasi/tanpa-hotel', [RekomendasiController::class, 'tanpaHotel'])->middleware('throttle:recommendation')->name('wisatawan.rekomendasi.tanpa-hotel');
 Route::get('/rekomendasi/hasil', [RekomendasiController::class, 'hasil'])->name('wisatawan.rekomendasi.hasil');
 Route::delete('/rekomendasi/reset', [RekomendasiController::class, 'reset'])->name('wisatawan.rekomendasi.reset');
 Route::post('/rating-kunjungan', [RatingKunjunganController::class, 'store'])->middleware('throttle:rating')->name('wisatawan.rating-kunjungan.store');
