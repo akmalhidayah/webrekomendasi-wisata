@@ -99,6 +99,43 @@ class RekomendasiFeatureTest extends TestCase
             ->assertSeeInOrder(['Wisata Ranking Satu', 'Wisata Ranking Dua']);
     }
 
+    public function test_normal_cf_zero_score_remains_numeric_and_is_not_labeled_unused(): void
+    {
+        $kategori = KategoriWisata::create(['nama_kategori' => 'Budaya', 'slug' => 'budaya']);
+        $guest = GuestVisitor::create(['kode_guest' => 'GST-CF-ZERO']);
+        $wisata = Wisata::create([
+            'kategori_wisata_id' => $kategori->id,
+            'nama_wisata' => 'Wisata CF Nol',
+            'slug' => 'wisata-cf-nol',
+            'jenis_wisata' => 'Budaya',
+            'alamat' => 'Makassar',
+            'status' => 'aktif',
+        ]);
+        HasilRekomendasi::create([
+            'guest_visitor_id' => $guest->id,
+            'wisata_id' => $wisata->id,
+            'nilai_prediksi' => 3.5,
+            'nilai_similarity' => 0,
+            'ranking' => 1,
+            'metode' => 'Hybrid Collaborative Filtering',
+            'skor_cf' => 0,
+            'skor_preferensi' => 0.65,
+            'skor_budget' => 0.8,
+            'skor_rating_destinasi' => 0.7,
+            'skor_akhir' => 0.7,
+        ]);
+
+        $response = $this->withSession(['kode_guest' => $guest->kode_guest])
+            ->get(route('wisatawan.rekomendasi.hasil'));
+
+        $response->assertOk()
+            ->assertSee('data-display-method="Hybrid Collaborative Filtering"', false)
+            ->assertSee('data-score-value="0%"', false)
+            ->assertSee('data-score-value="65%"', false)
+            ->assertDontSee('data-score-value="not-used"', false)
+            ->assertDontSee('Metode: Preferensi Umum');
+    }
+
     public function test_legacy_all_low_survey_is_rejected_before_recommendation_generation(): void
     {
         $this->seed();

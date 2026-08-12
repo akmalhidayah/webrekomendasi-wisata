@@ -33,6 +33,9 @@
     .metric-item { padding: .78rem; border: 1px solid #e5eaf0; border-radius: 16px; background: #f8fafc; }
     .metric-item small { display: block; color: #64748b; font-size: .65rem; font-weight: 850; text-transform: uppercase; letter-spacing: .05em; }
     .metric-item strong { display: block; margin-top: .18rem; color: #0f172a; font-size: .88rem; }
+    .score-not-used { display: inline-flex !important; align-items: center; gap: .35rem; color: #475569 !important; }
+    .score-info-button { display: inline-grid; width: 22px; height: 22px; padding: 0; place-items: center; border: 0; border-radius: 50%; color: #0369a1; background: #e0f2fe; font-size: .78rem; line-height: 1; }
+    .score-info-button:hover, .score-info-button:focus-visible { color: #fff; background: #0369a1; outline: 2px solid #7dd3fc; outline-offset: 2px; }
     .hotel-strip { display: flex; justify-content: space-between; gap: .75rem; align-items: center; padding: .9rem; border: 1px solid #fde68a; border-radius: 18px; background: #fffbeb; }
     .hotel-strip strong { color: #78350f; }
     .reason-list { display: flex; flex-wrap: wrap; gap: .45rem; margin: .8rem 0 0; padding: 0; list-style: none; }
@@ -83,7 +86,7 @@
                 <h1 class="result-title">Hasil Rekomendasi Wisata</h1>
                 <p class="result-subtitle mb-3">
                     @if ($isBroadInterest)
-                        Ranking disusun dari kualitas destinasi, budget, kebutuhan hotel, dan jarak yang tersedia untuk profil minat luas Anda.
+                        Preferensi Anda menunjukkan ketertarikan yang tinggi terhadap seluruh pilihan. Sistem menggunakan Preferensi Umum untuk menentukan rekomendasi berdasarkan faktor yang tersedia.
                     @else
                         Ranking dihitung dari Collaborative Filtering, budget, kebutuhan hotel, jarak lokasi, preferensi kategori, dan rating destinasi.
                     @endif
@@ -108,8 +111,8 @@
             <i class="bi bi-info-circle-fill"></i>
             <div>
                 @if ($isBroadInterest)
-                    <strong>Mode Minat Luas</strong>
-                    <div class="small">Pilihan Anda menunjukkan minat yang luas. Ranking menggunakan kualitas destinasi serta budget dan jarak ketika tersedia, tanpa similarity Collaborative Filtering.</div>
+                    <strong>Metode: Preferensi Umum</strong>
+                    <div class="small">Preferensi Anda menunjukkan ketertarikan yang tinggi terhadap seluruh pilihan. Sistem menggunakan kualitas destinasi serta budget dan jarak ketika tersedia.</div>
                 @elseif ($isFallback)
                     <strong>Mode Fallback</strong>
                     <div class="small">Tetangga CF yang valid belum cukup. Ranking tetap mengikuti budget maksimum, kebutuhan hotel, preferensi, jarak, dan rating destinasi.</div>
@@ -183,6 +186,7 @@
                     $mapsUrl = $item->wisata?->maps_url ?: $item->wisata?->link_maps;
                     $hasDistance = ! is_null($item->jarak_km);
                     $isBroadItem = $item->metode === 'Broad Interest';
+                    $displayMethod = $isBroadItem ? 'Preferensi Umum' : $item->metode;
                     $broadBaseWeight = 0.50
                         + ($guest->hasBudgetPreference() ? 0.30 : 0)
                         + ($hasDistance ? 0.20 : 0);
@@ -247,16 +251,53 @@
                                     <div id="calc{{ $item->id }}" class="accordion-collapse collapse" data-bs-parent="#calcAccordion{{ $item->id }}">
                                         <div class="accordion-body">
                                             <div class="score-detail-grid">
-                                                <div class="metric-item"><small>Skor CF</small><strong>{{ $formatScore($item->skor_cf) }}</strong></div>
+                                                <div class="metric-item" data-score-component="method"><small>Metode</small><strong data-display-method="{{ $displayMethod }}">{{ $displayMethod }}</strong></div>
+                                                <div class="metric-item" data-score-component="cf">
+                                                    <small>Skor CF</small>
+                                                    @if ($isBroadItem && $item->skor_cf === null)
+                                                        <strong class="score-not-used" data-score-value="not-used">
+                                                            Tidak digunakan
+                                                            <button
+                                                                class="score-info-button"
+                                                                type="button"
+                                                                data-bs-toggle="tooltip"
+                                                                data-bs-trigger="hover focus click"
+                                                                data-bs-placement="top"
+                                                                title="Preferensi Anda tinggi dan seragam, sehingga rekomendasi dihitung menggunakan mode Preferensi Umum, bukan Collaborative Filtering."
+                                                                aria-label="Penjelasan mengapa skor Collaborative Filtering tidak digunakan"
+                                                            ><i class="bi bi-info-circle" aria-hidden="true"></i></button>
+                                                        </strong>
+                                                    @else
+                                                        <strong data-score-value="{{ $formatScore($item->skor_cf) }}">{{ $formatScore($item->skor_cf) }}</strong>
+                                                    @endif
+                                                </div>
                                                 <div class="metric-item"><small>Skor Budget</small><strong>{{ $formatScore($item->skor_budget) }}</strong></div>
                                                 <div class="metric-item"><small>Skor Jarak</small><strong>{{ $item->skor_jarak === null ? '-' : $formatScore($item->skor_jarak) }}</strong></div>
-                                                <div class="metric-item"><small>Skor Preferensi</small><strong>{{ $formatScore($item->skor_preferensi) }}</strong></div>
+                                                <div class="metric-item" data-score-component="preference">
+                                                    <small>Skor Preferensi</small>
+                                                    @if ($isBroadItem && $item->skor_preferensi === null)
+                                                        <strong class="score-not-used" data-score-value="not-used">
+                                                            Tidak digunakan
+                                                            <button
+                                                                class="score-info-button"
+                                                                type="button"
+                                                                data-bs-toggle="tooltip"
+                                                                data-bs-trigger="hover focus click"
+                                                                data-bs-placement="top"
+                                                                title="Skor preferensi khusus tidak digunakan karena tingkat ketertarikan Anda merata pada seluruh pilihan."
+                                                                aria-label="Penjelasan mengapa skor preferensi khusus tidak digunakan"
+                                                            ><i class="bi bi-info-circle" aria-hidden="true"></i></button>
+                                                        </strong>
+                                                    @else
+                                                        <strong data-score-value="{{ $formatScore($item->skor_preferensi) }}">{{ $formatScore($item->skor_preferensi) }}</strong>
+                                                    @endif
+                                                </div>
                                                 <div class="metric-item"><small>Skor Rating</small><strong>{{ $formatScore($item->skor_rating_destinasi) }}</strong></div>
                                                 <div class="metric-item"><small>Skor Akhir</small><strong>{{ $formatScore($item->skor_akhir) }}</strong></div>
                                             </div>
                                             <div class="formula-box">
                                                 @if ($isBroadItem)
-                                                    Mode Minat Luas:
+                                                    Mode Preferensi Umum:
                                                     {{ number_format($broadRatingWeight, 1, ',', '.') }}% Rating Destinasi
                                                     @if ($broadBudgetWeight !== null) + {{ number_format($broadBudgetWeight, 1, ',', '.') }}% Budget @endif
                                                     @if ($broadDistanceWeight !== null) + {{ number_format($broadDistanceWeight, 1, ',', '.') }}% Jarak @endif
@@ -291,6 +332,10 @@
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
     document.addEventListener('DOMContentLoaded', () => {
+        document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach((element) => {
+            new bootstrap.Tooltip(element, { container: 'body' });
+        });
+
         const resetForms = document.querySelectorAll('.form-reset-rekomendasi');
         resetForms.forEach((form) => {
             form.addEventListener('submit', (event) => {

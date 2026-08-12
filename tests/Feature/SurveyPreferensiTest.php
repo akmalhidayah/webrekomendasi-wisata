@@ -118,9 +118,19 @@ class SurveyPreferensiTest extends TestCase
 
         $this->get(route('wisatawan.rekomendasi.hasil'))
             ->assertOk()
-            ->assertSee('Mode Minat Luas')
+            ->assertSee('Metode: Preferensi Umum')
             ->assertSee('Skor CF')
-            ->assertSee('Mode Minat Luas:')
+            ->assertSee('Skor Preferensi')
+            ->assertSee('Mode Preferensi Umum:')
+            ->assertSee('data-display-method="Preferensi Umum"', false)
+            ->assertSee('data-score-component="cf"', false)
+            ->assertSee('data-score-component="preference"', false)
+            ->assertSee('data-score-value="not-used"', false)
+            ->assertSee('Tidak digunakan')
+            ->assertSee('Preferensi Anda tinggi dan seragam, sehingga rekomendasi dihitung menggunakan mode Preferensi Umum, bukan Collaborative Filtering.')
+            ->assertSee('Skor preferensi khusus tidak digunakan karena tingkat ketertarikan Anda merata pada seluruh pilihan.')
+            ->assertSee('data-bs-trigger="hover focus click"', false)
+            ->assertDontSee('data-display-method="Broad Interest"', false)
             ->assertDontSee('Formula: 50% CF');
     }
 
