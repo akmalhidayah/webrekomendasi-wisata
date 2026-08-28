@@ -2,7 +2,6 @@
 
 namespace App\Http\Requests\Wisatawan;
 
-use App\Services\CollaborativeFilteringService;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
@@ -61,20 +60,6 @@ class StoreSurveyPreferensiRequest extends FormRequest
                 $validator->errors()->add('budget_max', 'Budget maksimum tidak boleh lebih kecil dari budget minimum.');
             }
 
-            if ($submitted->count() !== 10) {
-                return;
-            }
-
-            $ratings = collect($this->input('ratings', []))
-                ->pluck('rating_awal')
-                ->map(fn ($rating) => (int) $rating)
-                ->all();
-            $pattern = app(CollaborativeFilteringService::class)->classifyPreferencePattern($ratings);
-            $message = app(CollaborativeFilteringService::class)->preferencePatternMessage($pattern);
-
-            if ($message !== null) {
-                $validator->errors()->add('preference_pattern', $message);
-            }
         });
     }
 }

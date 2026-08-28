@@ -36,19 +36,6 @@ class RekomendasiController extends Controller
             return redirect()->route('wisatawan.survey.index')->with('error', 'Silakan isi survey preferensi terlebih dahulu.');
         }
 
-        $targetRatings = $recommendationService->getTargetRatings($guest);
-        $pattern = $recommendationService->classifyPreferencePattern(array_values($targetRatings));
-        $patternMessage = $recommendationService->preferencePatternMessage($pattern);
-
-        if ($patternMessage !== null) {
-            $recommendationService->saveRecommendations($guest, []);
-            $request->session()->put('survey_wisata_ids', array_keys($targetRatings));
-            $request->session()->forget('recommendation_issue');
-
-            return redirect()->route('wisatawan.survey.index')
-                ->withErrors(['preference_pattern' => $patternMessage]);
-        }
-
         $outcome = $recommendationService->generateRecommendationOutcome($guest, 5);
         $this->storeRecommendationIssue($request, $guest, $outcome);
         LogAktivitas::create([
@@ -76,6 +63,7 @@ class RekomendasiController extends Controller
             ->values();
         $isFallback = $hasil->contains(fn ($item) => str_contains($item->metode, 'Fallback'));
         $isBroadInterest = $hasil->contains(fn ($item) => $item->metode === 'Broad Interest');
+        $isQualityBudget = $hasil->contains(fn ($item) => $item->metode === 'Quality Budget & Popularity');
         $topRecommendation = $hasil->first();
         $showResultPopup = (bool) $request->session()->pull('recommendation_generated', false);
         $recommendationIssue = $request->session()->get('recommendation_issue');
@@ -85,6 +73,7 @@ class RekomendasiController extends Controller
             'hasil',
             'isFallback',
             'isBroadInterest',
+            'isQualityBudget',
             'topRecommendation',
             'showResultPopup',
             'recommendationIssue',

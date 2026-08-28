@@ -59,11 +59,11 @@ class SurveyPreferensiTest extends TestCase
             ->assertDontSee('name="budget_max" value="1000000"', false);
     }
 
-    public function test_all_low_and_all_middle_ratings_are_rejected_without_replacing_survey(): void
+    public function test_uniform_low_and_middle_ratings_still_generate_general_recommendations(): void
     {
         $this->seed();
 
-        foreach ([1, 3] as $ratingValue) {
+        foreach ([1, 2, 3] as $ratingValue) {
             $this->get(route('wisatawan.survey.index'))->assertOk();
             $ratings = collect(session('survey_wisata_ids'))->map(fn ($id) => [
                 'wisata_id' => $id,
@@ -79,15 +79,22 @@ class SurveyPreferensiTest extends TestCase
                 'is_location_allowed' => 0,
             ]);
 
-            $response->assertRedirect()
-                ->assertSessionHasErrors('preference_pattern')
-                ->assertSessionHasInput('ratings.0.rating_awal', $ratingValue);
-            $this->assertDatabaseCount('survey_preferensi', 0);
-            $this->assertDatabaseCount('hasil_rekomendasi', 0);
+            $response->assertRedirect(route('wisatawan.rekomendasi.hasil'));
 
-            $this->get(route('wisatawan.survey.index'))
+            $guest = GuestVisitor::firstOrFail();
+            $this->assertSame(10, $guest->surveyPreferensi()->count());
+            $this->assertSame(5, $guest->hasilRekomendasi()->count());
+            $this->assertSame(
+                ['Quality Budget & Popularity'],
+                $guest->hasilRekomendasi()->distinct()->pluck('metode')->all(),
+            );
+            $this->assertSame(5, $guest->hasilRekomendasi()->whereNull('skor_cf')->count());
+
+            $this->get(route('wisatawan.rekomendasi.hasil'))
                 ->assertOk()
-                ->assertSee('value="'.$ratingValue.'" selected', false);
+                ->assertSee('Metode: Kualitas, Rating')
+                ->assertSee('Rating survei Anda seragam')
+                ->assertSee('Popularitas sebagai penentu jika skor utama sama');
         }
     }
 

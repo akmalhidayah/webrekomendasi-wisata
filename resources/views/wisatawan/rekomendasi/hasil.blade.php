@@ -87,6 +87,8 @@
                 <p class="result-subtitle mb-3">
                     @if ($isBroadInterest)
                         Preferensi Anda menunjukkan ketertarikan yang tinggi terhadap seluruh pilihan. Sistem menggunakan Preferensi Umum untuk menentukan rekomendasi berdasarkan faktor yang tersedia.
+                    @elseif ($isQualityBudget)
+                        Rating survei Anda seragam, sehingga sistem memilih destinasi berdasarkan kualitas, rating/popularitas, budget, dan jarak jika tersedia.
                     @else
                         Ranking dihitung dari Collaborative Filtering, budget, kebutuhan hotel, jarak lokasi, preferensi kategori, dan rating destinasi.
                     @endif
@@ -113,6 +115,9 @@
                 @if ($isBroadInterest)
                     <strong>Metode: Preferensi Umum</strong>
                     <div class="small">Preferensi Anda menunjukkan ketertarikan yang tinggi terhadap seluruh pilihan. Sistem menggunakan kualitas destinasi serta budget dan jarak ketika tersedia.</div>
+                @elseif ($isQualityBudget)
+                    <strong>Metode: Kualitas, Rating &amp; Popularitas</strong>
+                    <div class="small">Rating survei yang seragam tidak dipakai untuk membedakan destinasi. Sistem mengutamakan rating/kualitas destinasi, popularitas, budget, dan jarak ketika tersedia.</div>
                 @elseif ($isFallback)
                     <strong>Mode Fallback</strong>
                     <div class="small">Tetangga CF yang valid belum cukup. Ranking tetap mengikuti budget maksimum, kebutuhan hotel, preferensi, jarak, dan rating destinasi.</div>
@@ -186,13 +191,15 @@
                     $mapsUrl = $item->wisata?->maps_url ?: $item->wisata?->link_maps;
                     $hasDistance = ! is_null($item->jarak_km);
                     $isBroadItem = $item->metode === 'Broad Interest';
-                    $displayMethod = $isBroadItem ? 'Preferensi Umum' : $item->metode;
+                    $isQualityBudgetItem = $item->metode === 'Quality Budget & Popularity';
+                    $isGeneralItem = $isBroadItem || $isQualityBudgetItem;
+                    $displayMethod = $isBroadItem ? 'Preferensi Umum' : ($isQualityBudgetItem ? 'Kualitas, Rating & Popularitas' : $item->metode);
                     $broadBaseWeight = 0.50
                         + ($guest->hasBudgetPreference() ? 0.30 : 0)
                         + ($hasDistance ? 0.20 : 0);
-                    $broadRatingWeight = $isBroadItem ? round(0.50 / $broadBaseWeight * 100, 1) : null;
-                    $broadBudgetWeight = $isBroadItem && $guest->hasBudgetPreference() ? round(0.30 / $broadBaseWeight * 100, 1) : null;
-                    $broadDistanceWeight = $isBroadItem && $hasDistance ? round(0.20 / $broadBaseWeight * 100, 1) : null;
+                    $generalRatingWeight = $isGeneralItem ? round(0.50 / $broadBaseWeight * 100, 1) : null;
+                    $generalBudgetWeight = $isGeneralItem && $guest->hasBudgetPreference() ? round(0.30 / $broadBaseWeight * 100, 1) : null;
+                    $generalDistanceWeight = $isGeneralItem && $hasDistance ? round(0.20 / $broadBaseWeight * 100, 1) : null;
                 @endphp
 
                 @if ($item->wisata)
@@ -254,7 +261,7 @@
                                                 <div class="metric-item" data-score-component="method"><small>Metode</small><strong data-display-method="{{ $displayMethod }}">{{ $displayMethod }}</strong></div>
                                                 <div class="metric-item" data-score-component="cf">
                                                     <small>Skor CF</small>
-                                                    @if ($isBroadItem && $item->skor_cf === null)
+                                                    @if ($isGeneralItem && $item->skor_cf === null)
                                                         <strong class="score-not-used" data-score-value="not-used">
                                                             Tidak digunakan
                                                             <button
@@ -263,7 +270,7 @@
                                                                 data-bs-toggle="tooltip"
                                                                 data-bs-trigger="hover focus click"
                                                                 data-bs-placement="top"
-                                                                title="Preferensi Anda tinggi dan seragam, sehingga rekomendasi dihitung menggunakan mode Preferensi Umum, bukan Collaborative Filtering."
+                                                                title="{{ $isBroadItem ? 'Preferensi Anda tinggi dan seragam, sehingga rekomendasi dihitung menggunakan mode Preferensi Umum, bukan Collaborative Filtering.' : 'Rating survei Anda seragam, sehingga rekomendasi dihitung berdasarkan rating/kualitas destinasi, popularitas, budget, dan jarak, bukan Collaborative Filtering.' }}"
                                                                 aria-label="Penjelasan mengapa skor Collaborative Filtering tidak digunakan"
                                                             ><i class="bi bi-info-circle" aria-hidden="true"></i></button>
                                                         </strong>
@@ -275,7 +282,7 @@
                                                 <div class="metric-item"><small>Skor Jarak</small><strong>{{ $item->skor_jarak === null ? '-' : $formatScore($item->skor_jarak) }}</strong></div>
                                                 <div class="metric-item" data-score-component="preference">
                                                     <small>Skor Preferensi</small>
-                                                    @if ($isBroadItem && $item->skor_preferensi === null)
+                                                    @if ($isGeneralItem && $item->skor_preferensi === null)
                                                         <strong class="score-not-used" data-score-value="not-used">
                                                             Tidak digunakan
                                                             <button
@@ -284,7 +291,7 @@
                                                                 data-bs-toggle="tooltip"
                                                                 data-bs-trigger="hover focus click"
                                                                 data-bs-placement="top"
-                                                                title="Skor preferensi khusus tidak digunakan karena tingkat ketertarikan Anda merata pada seluruh pilihan."
+                                                                title="{{ $isBroadItem ? 'Skor preferensi khusus tidak digunakan karena tingkat ketertarikan Anda merata pada seluruh pilihan.' : 'Skor preferensi khusus tidak digunakan karena rating survei Anda seragam pada seluruh pilihan.' }}"
                                                                 aria-label="Penjelasan mengapa skor preferensi khusus tidak digunakan"
                                                             ><i class="bi bi-info-circle" aria-hidden="true"></i></button>
                                                         </strong>
@@ -296,11 +303,12 @@
                                                 <div class="metric-item"><small>Skor Akhir</small><strong>{{ $formatScore($item->skor_akhir) }}</strong></div>
                                             </div>
                                             <div class="formula-box">
-                                                @if ($isBroadItem)
-                                                    Mode Preferensi Umum:
-                                                    {{ number_format($broadRatingWeight, 1, ',', '.') }}% Rating Destinasi
-                                                    @if ($broadBudgetWeight !== null) + {{ number_format($broadBudgetWeight, 1, ',', '.') }}% Budget @endif
-                                                    @if ($broadDistanceWeight !== null) + {{ number_format($broadDistanceWeight, 1, ',', '.') }}% Jarak @endif
+                                                @if ($isGeneralItem)
+                                                    {{ $isBroadItem ? 'Mode Preferensi Umum' : 'Mode Kualitas, Rating & Popularitas' }}:
+                                                    {{ number_format($generalRatingWeight, 1, ',', '.') }}% Rating Destinasi
+                                                    @if ($generalBudgetWeight !== null) + {{ number_format($generalBudgetWeight, 1, ',', '.') }}% Budget @endif
+                                                    @if ($generalDistanceWeight !== null) + {{ number_format($generalDistanceWeight, 1, ',', '.') }}% Jarak @endif
+                                                    @if ($isQualityBudgetItem) + Popularitas sebagai penentu jika skor utama sama @endif
                                                 @else
                                                     Formula: {{ $hasDistance ? '40% CF + 25% Budget + 20% Jarak + 10% Preferensi + 5% Rating Destinasi' : '50% CF + 25% Budget + 15% Preferensi + 10% Rating Destinasi' }}
                                                 @endif

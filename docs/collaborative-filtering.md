@@ -16,21 +16,27 @@ Implementasi terdapat pada `app/Services/CollaborativeFilteringService.php` dan 
 Kemiripan guest `u` dan `v` dihitung hanya pada wisata yang dinilai oleh keduanya:
 
 ```text
-similarity(u,v) = Σ(r_u,i × r_v,i)
-                  ─────────────────────────────
-                  √Σ(r_u,i²) × √Σ(r_v,i²)
+similarity(u,v) = Σ((r_u,i - mean_u) × (r_v,i - mean_v))
+                  ───────────────────────────────────────────────
+                  √Σ((r_u,i - mean_u)²) × √Σ((r_v,i - mean_v)²)
 ```
 
-Jika kedua guest tidak memiliki wisata yang sama, similarity bernilai `0`. Hanya similarity positif yang digunakan.
+Rating dipusatkan terhadap rata-rata masing-masing guest agar yang dibandingkan
+adalah pola minat, bukan sekadar kecenderungan memberi nilai tinggi atau rendah.
+Jika semua rating target sama, penyebut menjadi nol sehingga Collaborative
+Filtering tidak memiliki sinyal yang valid. Jika kedua guest tidak memiliki
+wisata yang sama, similarity juga bernilai `0`. Hanya similarity positif yang
+digunakan.
 
 ## Prediksi rating
 
-Untuk wisata `i` yang belum dinilai target:
+Untuk wisata `i` yang belum dinilai target, prediksi memakai rata-rata target
+sebagai baseline dan deviasi rating tetangga:
 
 ```text
-prediction(u,i) = Σ(similarity(u,v) × rating(v,i))
-                  ─────────────────────────────────
-                         Σ|similarity(u,v)|
+prediction(u,i) = mean_u + Σ(similarity(u,v) × (rating(v,i) - mean_v))
+                  ─────────────────────────────────────────────────────
+                                  Σ|similarity(u,v)|
 ```
 
 Hanya guest tetangga yang pernah menilai wisata `i` yang berkontribusi. `nilai_similarity` hasil rekomendasi menyimpan similarity tertinggi dari tetangga yang berkontribusi. Nilai disimpan dengan empat angka desimal.
@@ -40,11 +46,29 @@ Hanya guest tetangga yang pernah menilai wisata `i` yang berkontribusi. `nilai_s
 1. Wisatawan membuka survei tanpa login dan sistem membuat `guest_visitors` berdasarkan sesi.
 2. Wisatawan memberi rating awal untuk 10 destinasi.
 3. Sistem membentuk matriks user-item dari `survey_preferensi`.
-4. Sistem menghitung cosine similarity target dengan setiap guest lain.
-5. Sistem mencari wisata aktif yang belum dinilai target.
-6. Sistem menghitung prediksi setiap kandidat dan mengambil lima nilai tertinggi.
-7. Hasil lama target dihapus, kemudian hasil baru disimpan ke `hasil_rekomendasi` beserta ranking.
-8. Wisatawan melihat hasil rekomendasi pada `/rekomendasi/hasil`.
+4. Jika rating bervariasi, sistem menghitung cosine similarity target dengan setiap guest lain.
+5. Jika rating seragam, sistem melewati Collaborative Filtering dan memakai mode kualitas, budget, rating, dan popularitas.
+6. Sistem mencari wisata aktif yang belum dinilai target.
+7. Sistem menghitung skor setiap kandidat dan mengambil lima nilai tertinggi.
+8. Hasil lama target dihapus, kemudian hasil baru disimpan ke `hasil_rekomendasi` beserta ranking.
+9. Wisatawan melihat hasil rekomendasi pada `/rekomendasi/hasil`.
+
+## Rating survei seragam
+
+Rating rendah atau tengah yang seragam tetap menghasilkan rekomendasi. Pada
+kondisi semua rating berada di rentang 1–2 atau semuanya bernilai 3, sistem
+menggunakan metode `Quality Budget & Popularity` karena rating survei tidak
+memberi pembeda antar destinasi. Kandidat dipilih dari destinasi aktif yang
+belum dinilai, lalu diurutkan berdasarkan:
+
+- rating/kualitas destinasi sebagai faktor utama;
+- budget maksimum sebagai batas keras dan preferensi budget bila diisi;
+- jarak lokasi bila pengguna mengizinkannya;
+- jumlah rating sebagai penentu jika skor utama sama.
+
+Rating 4–5 yang seragam tetap menggunakan metode `Broad Interest` dengan
+perhitungan kualitas, budget, dan jarak yang sama. Collaborative Filtering hanya
+digunakan ketika rating survei memiliki variasi yang cukup.
 
 ## Fallback
 
@@ -63,29 +87,38 @@ Terdapat tiga guest dan lima wisata. Tanda `-` berarti belum dinilai.
 Similarity A–B:
 
 ```text
-(5×5 + 4×4 + 3×2) / (√(5²+4²+3²) × √(5²+4²+2²))
-= 47 / (√50 × √45)
-= 0.9908
+mean A = 4, mean B = 11/3
+((5-4)×(5-11/3) + (4-4)×(4-11/3) + (3-4)×(2-11/3))
+/ (√((5-4)²+(4-4)²+(3-4)²) × √((5-11/3)²+(4-11/3)²+(2-11/3)²))
+× (3/5)
+= 0.5892
 ```
 
 Similarity A–C:
 
 ```text
-(5×1 + 4×2 + 3×5) / (√50 × √30)
-= 28 / (√50 × √30)
-= 0.7230
+mean A = 4, mean C = 8/3
+((5-4)×(1-8/3) + (4-4)×(2-8/3) + (3-4)×(5-8/3))
+/ (√((5-4)²+(4-4)²+(3-4)²) × √((1-8/3)²+(2-8/3)²+(5-8/3)²))
+× (3/5)
+= -0.5765
 ```
 
-Prediksi A untuk W4:
+Similarity negatif tidak digunakan sebagai tetangga. Rata-rata rating B pada
+seluruh wisata yang dinilainya adalah `19/5 = 3,8`. Jika B menjadi tetangga
+positif, prediksi A untuk W4 memakai rata-rata A sebagai baseline:
 
 ```text
-((0.9908×5) + (0.7230×2)) / (0.9908+0.7230) = 3.7344
+mean A + similarity(A,B) × (rating B,W4 - mean B)
+= 4 + 0.5892 × (5 - 3.8)
+= 4.7070
 ```
 
-Prediksi A untuk W5:
+Untuk W5:
 
 ```text
-((0.9908×3) + (0.7230×5)) / (0.9908+0.7230) = 3.8437
+mean A + 0.5892 × (3 - 3.8)
+= 3.5286
 ```
 
 Karena prediksi W5 lebih tinggi, W5 ditempatkan di atas W4.

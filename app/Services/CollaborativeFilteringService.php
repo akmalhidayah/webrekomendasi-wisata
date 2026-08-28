@@ -25,17 +25,6 @@ class CollaborativeFilteringService
         $targetRatings = $this->getTargetRatings($guestVisitor);
         $pattern = $this->classifyPreferencePattern(array_values($targetRatings));
 
-        if (in_array($pattern, ['all_low', 'all_middle'], true)) {
-            $this->saveRecommendations($guestVisitor, []);
-
-            return [
-                'status' => $pattern,
-                'recommendations' => [],
-                'minimum_required_budget' => null,
-                'pattern' => $pattern,
-            ];
-        }
-
         $candidateIds = $this->getCandidateWisataIds($targetRatings);
         $minimumRequiredBudget = $this->calculateMinimumRequiredBudget($guestVisitor, $targetRatings);
 
@@ -63,8 +52,8 @@ class CollaborativeFilteringService
             ];
         }
 
-        $recommendations = $pattern === 'broad_interest'
-            ? $this->getBroadInterestRecommendations($guestVisitor, $limit, $targetRatings)
+        $recommendations = in_array($pattern, ['all_low', 'all_middle', 'broad_interest'], true)
+            ? $this->getGeneralRecommendations($guestVisitor, $limit, $targetRatings, $pattern)
             : $this->generateVariedRecommendations($guestVisitor, $limit, $targetRatings);
 
         $this->saveRecommendations($guestVisitor, $recommendations);
@@ -98,15 +87,6 @@ class CollaborativeFilteringService
         }
 
         return 'varied';
-    }
-
-    public function preferencePatternMessage(string $pattern): ?string
-    {
-        return match ($pattern) {
-            'all_low' => 'Preferensi Anda belum menunjukkan destinasi yang diminati. Silakan ubah minimal satu pilihan agar sistem dapat menentukan rekomendasi yang lebih sesuai.',
-            'all_middle' => 'Preferensi yang diberikan masih terlalu seragam. Silakan berikan penilaian yang lebih spesifik pada beberapa destinasi.',
-            default => null,
-        };
     }
 
     /** @param array<int, int> $targetRatings */
@@ -368,11 +348,23 @@ class CollaborativeFilteringService
     {
         $rating = $wisata->rating_tampil;
 
+        if ($rating === null && $wisata->rating_maps !== null) {
+            // Rating Maps tetap menjadi sinyal kualitas meskipun jumlah rating
+            // belum diimpor atau masih bernilai nol.
+            $rating = (float) $wisata->rating_maps;
+        }
+
         if ($rating === null) {
             return 0.6;
         }
 
         return round(max(0, min(5, (float) $rating)) / 5, 4);
+    }
+
+    private function getPopularityCount(Wisata $wisata): int
+    {
+        return max(0, (int) ($wisata->jumlah_rating_maps ?? 0))
+            + max(0, (int) $wisata->jumlah_rating_aplikasi);
     }
 
     public function calculateHybridScore(
@@ -453,11 +445,15 @@ class CollaborativeFilteringService
     }
 
     /** @param array<int, int> $targetRatings */
-    private function getBroadInterestRecommendations(
+    private function getGeneralRecommendations(
         GuestVisitor $guestVisitor,
         int $limit,
         array $targetRatings,
+        string $pattern,
     ): array {
+        $isBroadInterest = $pattern === 'broad_interest';
+        $method = $isBroadInterest ? 'Broad Interest' : 'Quality Budget & Popularity';
+
         $recommendations = Wisata::with([
             'kategoriWisata',
             'hotels' => fn ($query) => $query->where('status', 'aktif'),
@@ -467,7 +463,7 @@ class CollaborativeFilteringService
             ->where('status', 'aktif')
             ->whereNotIn('id', array_keys($targetRatings))
             ->get()
-            ->map(function (Wisata $wisata) use ($guestVisitor) {
+            ->map(function (Wisata $wisata) use ($guestVisitor, $method) {
                 $qualityScore = $this->calculateQualityScore($wisata);
                 $estimation = $this->calculateBudgetEstimation($guestVisitor, $wisata);
 
@@ -485,6 +481,7 @@ class CollaborativeFilteringService
                     'skor_jarak' => null,
                     'skor_preferensi' => null,
                     'skor_rating_destinasi' => round($qualityScore, 4),
+                    'jumlah_rating_destinasi' => $this->getPopularityCount($wisata),
                     'hotel_id' => $estimation['hotel_id'],
                     'hotel' => $estimation['hotel'],
                     'hotel_requested' => (bool) $guestVisitor->butuh_hotel,
@@ -493,7 +490,7 @@ class CollaborativeFilteringService
                     'total_estimasi_budget' => $estimation['total_estimasi_budget'],
                     'jarak_km' => $this->calculateCandidateDistance($guestVisitor, $wisata),
                     'alasan_rekomendasi' => [],
-                    'metode' => 'Broad Interest',
+                    'metode' => $method,
                 ];
             })
             ->filter()
@@ -526,21 +523,28 @@ class CollaborativeFilteringService
 
             $recommendation['skor_akhir'] = round($this->clamp($final), 4);
             $recommendation['nilai_prediksi'] = round($recommendation['skor_akhir'] * 5, 4);
-            $recommendation['broad_interest_weights'] = $weights;
-            $recommendation['alasan_rekomendasi'] = $this->buildBroadInterestReasons(
-                $recommendation,
-                $guestVisitor->hasBudgetPreference(),
-            );
+            $recommendation['general_recommendation_weights'] = $weights;
+            $recommendation['alasan_rekomendasi'] = $isBroadInterest
+                ? $this->buildBroadInterestReasons(
+                    $recommendation,
+                    $guestVisitor->hasBudgetPreference(),
+                )
+                : $this->buildQualityBudgetReasons(
+                    $recommendation,
+                    $guestVisitor->hasBudgetPreference(),
+                );
         }
         unset($recommendation);
 
         usort($recommendations, fn (array $first, array $second) => [
             $second['skor_akhir'],
             $second['skor_rating_destinasi'],
+            $second['jumlah_rating_destinasi'],
             -$second['wisata_id'],
         ] <=> [
             $first['skor_akhir'],
             $first['skor_rating_destinasi'],
+            $first['jumlah_rating_destinasi'],
             -$first['wisata_id'],
         ]);
 
@@ -798,6 +802,29 @@ class CollaborativeFilteringService
 
         if ($recommendation['hotel_requested'] && $recommendation['hotel_id'] !== null) {
             $reasons[] = 'Tersedia hotel aktif untuk kebutuhan menginap.';
+        }
+
+        return $reasons;
+    }
+
+    private function buildQualityBudgetReasons(array $recommendation, bool $hasBudget): array
+    {
+        $reasons = ['Rating dan popularitas destinasi menjadi pertimbangan utama karena rating survei Anda seragam.'];
+
+        if ($hasBudget && $recommendation['skor_budget'] >= 0.85) {
+            $reasons[] = 'Estimasi biaya sesuai dengan preferensi budget Anda.';
+        }
+
+        if ($recommendation['skor_jarak'] !== null && $recommendation['skor_jarak'] >= 0.65) {
+            $reasons[] = 'Destinasi ini relatif dekat dari lokasi Anda.';
+        }
+
+        if ($recommendation['hotel_requested'] && $recommendation['hotel_id'] !== null) {
+            $reasons[] = 'Tersedia hotel aktif untuk kebutuhan menginap.';
+        }
+
+        if ($recommendation['skor_rating_destinasi'] >= 0.75) {
+            $reasons[] = 'Destinasi memiliki rating kualitas yang tinggi dari data yang tersedia.';
         }
 
         return $reasons;

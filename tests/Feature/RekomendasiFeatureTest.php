@@ -136,7 +136,7 @@ class RekomendasiFeatureTest extends TestCase
             ->assertDontSee('Metode: Preferensi Umum');
     }
 
-    public function test_legacy_all_low_survey_is_rejected_before_recommendation_generation(): void
+    public function test_legacy_all_low_survey_generates_general_recommendations(): void
     {
         $this->seed();
         $guest = GuestVisitor::create(['kode_guest' => 'GST-LEGACY-LOW']);
@@ -158,10 +158,13 @@ class RekomendasiFeatureTest extends TestCase
 
         $this->withSession(['kode_guest' => $guest->kode_guest])
             ->post(route('wisatawan.rekomendasi.proses'))
-            ->assertRedirect(route('wisatawan.survey.index'))
-            ->assertSessionHasErrors('preference_pattern');
+            ->assertRedirect(route('wisatawan.rekomendasi.hasil'));
 
         $this->assertSame(10, $guest->surveyPreferensi()->count());
-        $this->assertSame(0, $guest->hasilRekomendasi()->count());
+        $this->assertSame(5, $guest->hasilRekomendasi()->count());
+        $this->assertSame(
+            ['Quality Budget & Popularity'],
+            $guest->hasilRekomendasi()->distinct()->pluck('metode')->all(),
+        );
     }
 }

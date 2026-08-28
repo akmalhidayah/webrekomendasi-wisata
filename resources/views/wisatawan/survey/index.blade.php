@@ -274,17 +274,6 @@
                     return false;
                 }
 
-                const ratings = ratingInputs.map((input) => Number(input.value));
-                const allLow = ratings.every((rating) => rating >= 1 && rating <= 2);
-                const allMiddle = ratings.every((rating) => rating === 3);
-                if (allLow || allMiddle) {
-                    preferenceClientError.textContent = allLow
-                        ? 'Pilih minimal satu destinasi dengan nilai 3–5 agar minat Anda dapat dikenali.'
-                        : 'Rating masih terlalu seragam. Berikan nilai berbeda pada beberapa destinasi.';
-                    preferenceClientError.classList.add('is-visible');
-                    return false;
-                }
-
                 preferenceClientError.classList.remove('is-visible');
             }
             if (currentStep === 2) {

@@ -40,6 +40,76 @@ class RecommendationBusinessRulesTest extends TestCase
         $this->assertSame(0, $guest->hasilRekomendasi()->where('total_estimasi_budget', '>', 220000)->count());
     }
 
+    public function test_uniform_ratings_use_quality_and_popularity_for_ranking(): void
+    {
+        $category = KategoriWisata::create([
+            'nama_kategori' => 'Kategori Rating Seragam',
+            'slug' => 'kategori-rating-seragam',
+        ]);
+        $guest = GuestVisitor::create([
+            'kode_guest' => 'GST-UNIFORM-RANKING',
+            'butuh_hotel' => false,
+        ]);
+        $rated = collect(range(1, 10))->map(fn ($number) => Wisata::create([
+            'kategori_wisata_id' => $category->id,
+            'nama_wisata' => "Wisata Dinilai Seragam {$number}",
+            'slug' => "wisata-dinilai-seragam-{$number}",
+            'jenis_wisata' => 'Uji',
+            'alamat' => 'Makassar',
+            'status' => 'aktif',
+        ]));
+        foreach ($rated as $wisata) {
+            $guest->surveyPreferensi()->create([
+                'wisata_id' => $wisata->id,
+                'rating_awal' => 1,
+            ]);
+        }
+
+        $popular = Wisata::create([
+            'kategori_wisata_id' => $category->id,
+            'nama_wisata' => 'Destinasi Rating Tinggi Populer',
+            'slug' => 'destinasi-rating-tinggi-populer',
+            'jenis_wisata' => 'Uji',
+            'alamat' => 'Makassar',
+            'rating_maps' => 5.0,
+            'jumlah_rating_maps' => 100,
+            'status' => 'aktif',
+        ]);
+        $lessPopular = Wisata::create([
+            'kategori_wisata_id' => $category->id,
+            'nama_wisata' => 'Destinasi Rating Tinggi Kurang Populer',
+            'slug' => 'destinasi-rating-tinggi-kurang-populer',
+            'jenis_wisata' => 'Uji',
+            'alamat' => 'Makassar',
+            'rating_maps' => 5.0,
+            'jumlah_rating_maps' => 1,
+            'status' => 'aktif',
+        ]);
+        $lowerRated = Wisata::create([
+            'kategori_wisata_id' => $category->id,
+            'nama_wisata' => 'Destinasi Rating Lebih Rendah',
+            'slug' => 'destinasi-rating-lebih-rendah',
+            'jenis_wisata' => 'Uji',
+            'alamat' => 'Makassar',
+            'rating_maps' => 4.0,
+            'jumlah_rating_maps' => 1000,
+            'status' => 'aktif',
+        ]);
+
+        $outcome = app(CollaborativeFilteringService::class)->generateRecommendationOutcome($guest, 3);
+
+        $this->assertSame('success', $outcome['status']);
+        $this->assertSame('all_low', $outcome['pattern']);
+        $this->assertSame(
+            [$popular->id, $lessPopular->id, $lowerRated->id],
+            collect($outcome['recommendations'])->pluck('wisata_id')->all(),
+        );
+        $this->assertSame(
+            ['Quality Budget & Popularity'],
+            $guest->hasilRekomendasi()->distinct()->pluck('metode')->all(),
+        );
+    }
+
     public function test_budget_insufficient_clears_stale_results_and_reports_minimum(): void
     {
         [$guest, $rated, $candidates] = $this->createScenario(budgetMax: 100000, candidateCosts: [175000, 250000]);
